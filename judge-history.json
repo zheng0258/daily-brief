@@ -2152,5 +2152,26 @@
     },
     "quality_alert": true,
     "quality_alert_reason": "faithfulness=2"
+  },
+  {
+    "date": "2026-11-15",
+    "overall": 3.9,
+    "scores": {
+      "relevance": 4.6,
+      "completeness": 5,
+      "faithfulness": 2
+    },
+    "quality_alert": true,
+    "quality_alert_reason": "faithfulness=2"
+  },
+  {
+    "date": "2026-11-16",
+    "overall": 4.2,
+    "scores": {
+      "relevance": 4.7,
+      "completeness": 5,
+      "faithfulness": 3
+    },
+    "quality_alert": false
   }
 ]

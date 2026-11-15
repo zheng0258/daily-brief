@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daily Brief 存檔 — 2026-11-16</title>
+<style>
+  :root { --bg: #0b0f14; --fg: #c8d3df; --accent: #4fd1c5; --dim: #5a6b7a; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2rem 1rem;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "SFMono-Regular", "Menlo", "Consolas", "Liberation Mono", monospace;
+    line-height: 1.6;
+  }
+  main { max-width: 1100px; margin: 0 auto; }
+  header { border-bottom: 1px solid var(--dim); padding-bottom: 1rem; margin-bottom: 2rem; }
+  .tagline { color: var(--accent); }
+  a { color: var(--accent); }
+  h1, h2, h3 { color: var(--fg); }
+  code, pre { background: #11161d; color: var(--accent); }
+  /* 報告表格：只讓「標題」(第一欄)與「備註」(最後一欄)兩個長文字欄限寬換行；
+     表頭與數字/類別/子版等短欄維持自然寬度、不逐字硬斷。整體放不下時橫向捲動不破版。 */
+  article { overflow-x: auto; }
+  article table { border-collapse: collapse; margin: 1rem 0; }
+  article th, article td {
+    border: 1px solid var(--dim); padding: 0.4rem 0.6rem;
+    text-align: left; vertical-align: top;
+  }
+  article th { color: var(--accent); white-space: nowrap; }
+  article td:first-child { max-width: 30ch; overflow-wrap: break-word; }
+  article td:last-child { max-width: 24ch; overflow-wrap: break-word; }
+  .meta { color: var(--dim); }
+  /* 今日重點：頂部導讀段落，左側 accent 邊條凸顯。 */
+  section.tldr { margin: 0 0 2rem; padding: 0.2rem 0 0.2rem 1rem;
+    border-left: 3px solid var(--accent); }
+  section.tldr .meta { color: var(--accent); letter-spacing: 0.05em; margin: 0 0 0.3rem; }
+  section.tldr p { margin: 0; }
+  nav.archive { margin-top: 2rem; border-top: 1px solid var(--dim); padding-top: 1rem; }
+  nav.archive ul { list-style: none; padding: 0; }
+  nav.archive li { margin: 0.25rem 0; }
+  /* 全部存檔頁：按月分組。 */
+  section.month-group { margin-bottom: 1.5rem; }
+  section.month-group h2 { color: var(--accent); font-size: 1.05rem;
+    border-bottom: 1px solid var(--dim); padding-bottom: 0.3rem; }
+  section.month-group ul { list-style: none; padding: 0;
+    display: flex; flex-wrap: wrap; gap: 0.3rem 1.4rem; }
+  section.month-group li { margin: 0.15rem 0; }
+  /* Hero 排：定位句 + 右上「關於本專案」按鈕。專案描述不直接顯示，收進 overlay。 */
+  .hero-row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+    justify-content: space-between; }
+  .about-btn { cursor: pointer; color: var(--accent); border: 1px solid var(--dim);
+    padding: 0.15rem 0.7rem; border-radius: 3px; user-select: none; white-space: nowrap; }
+  .about-btn:hover { border-color: var(--accent); }
+  /* 純 CSS overlay（無 JS）：隱藏 checkbox，label 當開關，:checked 顯示彈窗；背景 label 可關。 */
+  .about-checkbox { position: absolute; left: -9999px; }
+  .about-overlay { display: none; position: fixed; inset: 0; z-index: 100; }
+  .about-checkbox:checked ~ .about-overlay { display: block; }
+  .about-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.75); }
+  .about-panel { position: relative; max-width: 720px; margin: 6vh auto; max-height: 84vh;
+    overflow-y: auto; background: var(--bg); border: 1px solid var(--dim);
+    border-radius: 4px; padding: 1.5rem 2rem; }
+  .about-close { position: absolute; top: 0.5rem; right: 0.9rem; cursor: pointer;
+    color: var(--dim); font-size: 1.2rem; line-height: 1; text-decoration: none; }
+  .about-close:hover { color: var(--accent); }
+  /* system status block: hand-written CSS, terminal aesthetic; trend is inline SVG (no chart lib). */
+  section.status { margin-bottom: 2rem; border-bottom: 1px solid var(--dim); padding-bottom: 1rem; }
+  section.status h2 { color: var(--accent); font-size: 1rem; letter-spacing: 0.05em; }
+  .status-grid { display: flex; flex-wrap: wrap; gap: 2rem; align-items: flex-end; }
+  .status-streak { display: flex; flex-direction: column; }
+  .status-num { color: var(--accent); font-size: 2.4rem; line-height: 1; }
+  .status-label { color: var(--dim); font-size: 0.8rem; }
+  .status-trend { display: flex; flex-direction: column; flex: 1 1 240px; min-width: 200px; }
+  svg.spark { color: var(--accent); width: 100%; height: 40px; margin-top: 0.3rem; }
+  .status-rates { list-style: none; padding: 0; margin: 1rem 0 0;
+    display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; }
+  .status-rates li { display: flex; gap: 0.5rem; align-items: baseline; }
+  .status-src { color: var(--fg); }
+  .status-pct { color: var(--accent); }
+  .status-frac { color: var(--dim); font-size: 0.8rem; }
+  /* top nav：首頁 ⇄ 運行紀錄 的切換連結（終端風、無框架）。 */
+  nav.top { display: flex; gap: 1.2rem; margin: 0.3rem 0 0; font-size: 0.85rem; }
+  nav.top a { color: var(--dim); text-decoration: none; }
+  nav.top a:hover, nav.top a.on { color: var(--accent); }
+  /* 運行紀錄頁：一列一次 run（CI 執行史）。狀態矩陣為手刻小格，無圖表庫。 */
+  .runs-wrap { overflow-x: auto; }
+  table.runs { border-collapse: collapse; width: 100%; font-size: 0.85rem; margin-top: 1rem; }
+  table.runs th {
+    color: var(--dim); text-align: left; font-weight: normal; text-transform: uppercase;
+    letter-spacing: 0.06em; font-size: 0.72rem; padding: 0.3rem 0.6rem 0.5rem;
+    border-bottom: 1px solid var(--dim); white-space: nowrap;
+  }
+  table.runs td { padding: 0.45rem 0.6rem; border-bottom: 1px solid #1b232d; white-space: nowrap; }
+  table.runs tr:hover td { background: #11161d; }
+  table.runs .n { text-align: right; font-variant-numeric: tabular-nums; }
+  table.runs a.day { color: var(--fg); text-decoration: none; }
+  table.runs a.day:hover { color: var(--accent); text-decoration: underline; }
+  .rpill { font-size: 0.72rem; padding: 0.05rem 0.5rem; border-radius: 10px; border: 1px solid; }
+  .rpill.success { color: #56c271; border-color: #2c5c3a; }
+  .rpill.partial { color: #e0a52e; border-color: #6b551f; }
+  .rpill.failed { color: #e0603a; border-color: #6b3524; }
+  .rpill.unknown { color: var(--dim); border-color: var(--dim); }
+  /* absent = 該日 pipeline 整天沒跑（四份歷史皆無記錄），與 unknown 區分：
+     unknown 是「跑了但推導不出狀態」，absent 是「根本沒跑」。 */
+  .rpill.absent { color: #7a6bd6; border-color: #453c78; }
+  .rcells { display: inline-flex; gap: 3px; }
+  .rcell {
+    width: 16px; height: 16px; border-radius: 3px; display: inline-block; line-height: 16px;
+    text-align: center; font-size: 0.6rem; color: #0b0f14;
+  }
+  .rcell.ok { background: #56c271; }
+  .rcell.fail { background: #e0603a; }
+  .rcell.warn { background: #e0a52e; }
+  .rcell.na { background: #1b232d; color: var(--dim); }
+  .runs-legend { color: var(--dim); font-size: 0.72rem; margin-top: 1rem;
+    display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; }
+  .runs-legend .sw { width: 11px; height: 11px; border-radius: 2px; display: inline-block;
+    vertical-align: middle; margin-right: 0.3rem; }
+  .runs-empty { color: var(--dim); margin-top: 1.5rem; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <p class="tagline">本地 LLM 多代理自主系統</p>
+  <p class="meta">存檔日期：2026-11-16</p>
+  <p class="meta"><a href="../index.html">← 回首頁</a>　·　<a href="index.html">全部存檔</a></p>
+</header>
+<article>
+<h1>趨勢話題：2026-11-16</h1>
+<hr>
+<h2>Hatena Bookmark IT（日本市場）</h2>
+<h3>注目話題</h3>
+<table>
+<thead>
+<tr>
+<th>標題</th>
+<th>書籤數</th>
+<th>興趣度</th>
+<th>類別</th>
+<th>備註</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://speakerdeck.com/minorun365/jouji-kadou-ejento-no-tsukurikata" rel="noopener noreferrer">如何製作常駐運行的 Agent（將 Claude 官方博客資料化）</a></td>
+<td>491</td>
+<td>***</td>
+<td>AI 開發工具</td>
+<td>將 Claude 官方博客資料化為常駐 Agent</td>
+</tr>
+<tr>
+<td><a href="https://news.jp/i/1494496378441958289" rel="noopener noreferrer">柏林獨泳池 15 人健康不良：受微軟系統故障影響 ／ NEWSjp</a></td>
+<td>297</td>
+<td>***</td>
+<td>Web 資安 / 滲透測試</td>
+<td>微軟系統故障致柏林泳池 15 人健康不良</td>
+</tr>
+<tr>
+<td><a href="https://speakerdeck.com/atalie2m/goodbye-ssh-key-jisabakan-2026" rel="noopener noreferrer">再見 SSH 金鑰，你好零信任——AI 友善且順暢的家用伺服器 SSH</a></td>
+<td>19</td>
+<td>***</td>
+<td>AI 開發工具</td>
+<td>AI 時代家用伺服器 SSH 改用零信任</td>
+</tr>
+</tbody>
+</table>
+<h3>全部文章（略）</h3>
+<ol>
+<li><a href="https://speakerdeck.com/minorun365/jouji-kadou-ejento-no-tsukurikata" rel="noopener noreferrer">如何製作常駐運行的 Agent（將 Claude 官方博客資料化）</a> (491 users) — 將 Claude 官方博客資料化為常駐 Agent</li>
+<li><a href="https://news.jp/i/1494496378441958289" rel="noopener noreferrer">柏林獨泳池 15 人健康不良：受微軟系統故障影響 ／ NEWSjp</a> (297 users) — 微軟系統故障致柏林泳池 15 人健康不良</li>
+<li><a href="https://speakerdeck.com/atalie2m/goodbye-ssh-key-jisabakan-2026" rel="noopener noreferrer">再見 SSH 金鑰，你好零信任——AI 友善且順暢的家用伺服器 SSH</a> (19 users) — AI 時代家用伺服器 SSH 改用零信任</li>
+<li><a href="https://speakerdeck.com/daishukojima/ttf2026-e2e-test-harness" rel="noopener noreferrer">E2E Test 這種測試框架 — AI 時代的自動測試民主化</a> (16 users) — Tokyo Test Fest 2026 介紹 E2E 測試框架</li>
+<li><a href="https://qiita.com/kentasatomi/items/06ccfbf7f6a2a24883ff" rel="noopener noreferrer">如何為 Claude Code 留下相同的調查筆記，避免重複調查 - Qiita</a> (13 users) — Claude Code 避免重複調查的筆記技巧</li>
+<li><a href="https://qiita.com/Sicut_study/items/b6d17933cc276dadf6d5" rel="noopener noreferrer">AI 開發的保安是設計中證明！今後工程師所需的技能完全解說 - Qiita</a> (8 users) — AI 開發安全需於設計階段證明</li>
+</ol>
+<hr>
+<h2>Hacker News（全球）</h2>
+<h3>注目話題</h3>
+<table>
+<thead>
+<tr>
+<th>標題</th>
+<th>分數</th>
+<th>興趣度</th>
+<th>類別</th>
+<th>備註</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://news.ycombinator.com/item?id=50507303" rel="noopener noreferrer">所有 AI 生成的程式碼都應該開源</a></td>
+<td>527pt</td>
+<td>***</td>
+<td>AI 開發工具</td>
+<td>主張所有 AI 生成程式碼應開源</td>
+</tr>
+<tr>
+<td><a href="https://news.ycombinator.com/item?id=50506376" rel="noopener noreferrer">理解現代大型語言模型中的位置嵌入</a></td>
+<td>123pt</td>
+<td>***</td>
+<td>重要 AI 模型 / 研究發布</td>
+<td>解析現代大型語言模型位置嵌入</td>
+</tr>
+<tr>
+<td><a href="https://news.ycombinator.com/item?id=50463399" rel="noopener noreferrer">Claude Code 與 Codex 逆向工程我 1994 年吉普車的 ECU（附影片）</a></td>
+<td>85pt</td>
+<td>***</td>
+<td>AI 開發工具</td>
+<td>用 AI 逆向工程 1994 年吉普車 ECU</td>
+</tr>
+</tbody>
+</table>
+<h3>全部文章（部分）</h3>
+<ol>
+<li><a href="https://news.ycombinator.com/item?id=50507303" rel="noopener noreferrer">所有 AI 生成的程式碼都應該開源</a> (527pt) — 主張所有 AI 生成程式碼應開源
+   💬 社群觀點：多數人支持 AI 程式碼應開源，但有人質疑若無版權則授權無意義，或指出需區分特定領域專案。</li>
+<li><a href="https://news.ycombinator.com/item?id=50506376" rel="noopener noreferrer">理解現代大型語言模型中的位置嵌入</a> (123pt) — 解析現代大型語言模型位置嵌入
+   💬 社群觀點：留言指出需理解群表示論理論，但文章僅涵蓋實作細節。</li>
+<li><a href="https://news.ycombinator.com/item?id=50463399" rel="noopener noreferrer">Claude Code 與 Codex 逆向工程我 1994 年吉普車的 ECU（附影片）</a> (85pt) — 用 AI 逆向工程 1994 年吉普車 ECU
+   💬 社群觀點：多數人讚賞技術與賦予消費者自主權，但有人質疑動畫製作方式及低壓導致故障的機械問題。</li>
+<li><a href="https://news.ycombinator.com/item?id=50481321" rel="noopener noreferrer">語言模型內部數千次對話的樣貌</a> (68pt) — 展示語言模型內部數千次對話樣貌
+   💬 社群觀點：多數人認為語言風格差異明顯，但有人質疑維度還原方法是否合理。</li>
+</ol>
+<hr>
+<h2>Reddit</h2>
+<h3>注目話題</h3>
+<table>
+<thead>
+<tr>
+<th>標題</th>
+<th>票數</th>
+<th>留言數</th>
+<th>興趣度</th>
+<th>類別</th>
+<th>子版</th>
+<th>備註</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://www.reddit.com/r/OpenAI/comments/1xwmzgl/built_a_factchecker_that_catches_politicians/" rel="noopener noreferrer">打造了一個能即時抓出政客謊言的事實檢查器</a></td>
+<td>-</td>
+<td>-</td>
+<td>***</td>
+<td>重要 AI 模型 / 研究發布</td>
+<td>r/OpenAI</td>
+<td>開發者打造即時抓政客謊言工具</td>
+</tr>
+<tr>
+<td><a href="https://www.reddit.com/r/GoogleGeminiAI/comments/1xwq5rp/gemini_4_carbon_comes_close_to_taking_1_while/" rel="noopener noreferrer">Gemini 4 Carbon 即將逼近第 1 名，成本卻比 Claude Fable 5.2 低 4 倍。你會選擇哪一個？</a></td>
+<td>-</td>
+<td>-</td>
+<td>***</td>
+<td>AI 開發工具</td>
+<td>r/GoogleGeminiAI</td>
+<td>Gemini 4 Carbon 成本比 Claude Fable 5.2 低</td>
+</tr>
+<tr>
+<td><a href="https://www.reddit.com/r/GoogleGeminiAI/comments/1xwwyqo/is_gemini_pro_sub_providing_usage_much_as_claude/" rel="noopener noreferrer">Gemini Pro Sub. 提供的用量是否與 Claude 或 Codex 差不多</a></td>
+<td>-</td>
+<td>-</td>
+<td>***</td>
+<td>AI 開發工具</td>
+<td>r/GoogleGeminiAI</td>
+<td>Gemini Pro Sub. 用量與 Claude 或 Codex 比較</td>
+</tr>
+</tbody>
+</table>
+<h3>依類別列表</h3>
+<p><strong>重要 AI 模型 / 研究發布</strong></p>
+<ol>
+<li><a href="https://www.reddit.com/r/OpenAI/comments/1xwmzgl/built_a_factchecker_that_catches_politicians/" rel="noopener noreferrer">打造了一個能即時抓出政客謊言的事實檢查器</a> (- ups) — r/OpenAI — 開發者打造即時抓政客謊言工具</li>
+</ol>
+<p><strong>AI 開發工具</strong></p>
+<ol>
+<li><a href="https://www.reddit.com/r/GoogleGeminiAI/comments/1xwq5rp/gemini_4_carbon_comes_close_to_taking_1_while/" rel="noopener noreferrer">Gemini 4 Carbon 即將逼近第 1 名，成本卻比 Claude Fable 5.2 低 4 倍。你會選擇哪一個？</a> (- ups) — r/GoogleGeminiAI — Gemini 4 Carbon 成本比 Claude Fable 5.2 低</li>
+<li><a href="https://www.reddit.com/r/GoogleGeminiAI/comments/1xwwyqo/is_gemini_pro_sub_providing_usage_much_as_claude/" rel="noopener noreferrer">Gemini Pro Sub. 提供的用量是否與 Claude 或 Codex 差不多</a> (- ups) — r/GoogleGeminiAI — Gemini Pro Sub. 用量與 Claude 或 Codex 比較</li>
+<li><a href="https://www.reddit.com/r/indiehackers/comments/1xwd8go/i_built_a_local_tool_to_flag_when_an_ai_rewrite/" rel="noopener noreferrer">我開發了一個本地工具，標記 AI 重寫時數值、限制或承諾的變化</a> (- ups) — r/indiehackers — 開發者標記 AI 重寫時數值變化</li>
+</ol>
+<hr>
+<h2>資安部落格</h2>
+<table>
+<thead>
+<tr>
+<th>標題</th>
+<th>來源</th>
+<th>興趣度</th>
+<th>備註</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://www.wiz.io/blog/inside-green-agent-investigation" rel="noopener noreferrer">The Green Agent POV: Formulating the Fix for an Exposed Container with Sensitive Data Access</a></td>
+<td>wiz.io</td>
+<td>***</td>
+<td>Green Agent 平衡安全與業務連續性</td>
+</tr>
+<tr>
+<td><a href="https://www.wiz.io/blog/aspm-ai-era-pt-3-fixing-risk-code-speed" rel="noopener noreferrer">ASPM in the AI Era Part 3: Fixing Risk at the Speed of Code</a></td>
+<td>wiz.io</td>
+<td>***</td>
+<td>AI 時代 ASPM 加速漏洞修復速度</td>
+</tr>
+<tr>
+<td><a href="https://www.wiz.io/blog/cyber-model-arena-ai-benchmark" rel="noopener noreferrer">How to Evaluate AI Agent Cybersecurity Capabilities</a></td>
+<td>wiz.io</td>
+<td>***</td>
+<td>評估 AI 代理網路安全能力方法</td>
+</tr>
+<tr>
+<td><a href="https://www.wiz.io/blog/green-agent-agentic-remediation" rel="noopener noreferrer">代理式修復的投資報酬率：Wiz Green Agent 實戰成果</a></td>
+<td>wiz.io</td>
+<td>***</td>
+<td>Fireblocks 等企業使用 Green Agent</td>
+</tr>
+<tr>
+<td><a href="https://www.wiz.io/blog/soc-alerts-red-and-blue-agents" rel="noopener noreferrer">從被動到主動：Wiz Red Agent 與 Blue Agent 賦能 SOC 團隊</a></td>
+<td>wiz.io</td>
+<td>***</td>
+<td>Wiz Red Blue Agent 賦能 SOC 團隊</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/stolen-fireworks-ai-key-led-to-cursor.html" rel="noopener noreferrer">Cursor 表示竊取的 Fireworks AI Key 導致 Claude Code 擴充功能被植入惡意程式</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>Cursor 竊取 Fireworks Key 導致 Claude Code 被植入惡意程式</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/attackers-exploit-unrealircd-flaw-that.html" rel="noopener noreferrer">攻擊者利用 UnrealIRCd 漏洞導致伺服器層級指令注入</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>攻擊者利用 UnrealIRCd 漏洞導致伺服器層級指令注入</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/when-ai-agent-goes-wrong-can-you-stop-it.html" rel="noopener noreferrer">當 AI Agent 出錯時，你能阻止它嗎？</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>AI Agent 出錯時，使用者可阻止其執行錯誤指令</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/silentair-hijacks-asian-telecom.html" rel="noopener noreferrer">SilentAir 劫持亞洲電信網路攔截 SMS 2FA 代碼並窺探台灣用戶</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>SilentAir 劫持亞洲電信網路攔截 SMS 2FA 代碼並窺探台灣用戶</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/operation-endgame-takes-down-gootloader.html" rel="noopener noreferrer">Operation Endgame 摧毀 Gootloader、CastleRAT 和 StealC 伺服器，繳獲 640 萬個被竊取的登入憑證</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>Operation Endgame 摧毀惡意軟體伺服器並繳獲 640 萬個被竊取的登入憑證</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/hackers-exploit-php2shell-flaws-in.html" rel="noopener noreferrer">駭客利用 Check Point 防火牆 PHP2Shell 漏洞部署 TSGA 後門並清除 ESXi 檔案</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>駭客利用 Check Point 防火牆 PHP2Shell 漏洞部署 TSGA 後門並清除 ESXi 檔案</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/hackers-exploit-n-central-flaws-to.html" rel="noopener noreferrer">駭客利用 N-central 漏洞感染 21 台伺服器，包括 19 台運行 Hotfix 2</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>駭客利用 N-central 漏洞感染 21 台伺服器，包括 19 台運行 Hotfix 2</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/threatsday-59-linux-kernel-bugs-falcon.html" rel="noopener noreferrer">ThreatsDay：59 個 Linux Kernel Bug、Falcon 間諜軟體、GSocket 後門等 17 則報導</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>ThreatsDay 報導 59 個 Linux Kernel Bug、Falcon 間諜軟體等共 17 則安全事件</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/new-signdrop-zero-day-exploit-turns.html" rel="noopener noreferrer">新 SignDrop 零日漏洞將 Windows CLFS 安全功能轉化為 SYSTEM 存取權限</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>新 SignDrop 零日漏洞將 Windows CLFS 安全功能轉化為 SYSTEM 存取權限</td>
+</tr>
+<tr>
+<td><a href="https://dev.to/jackymencz/sentinel-ir-059-sentinel-ir-mcp-059-ordinary-user-test-round-3-macos-5e88" rel="noopener noreferrer">sentinel-ir 0.5.9 / sentinel-ir-mcp 0.5.9：普通用戶測試，第 3 輪（macOS）</a></td>
+<td>DEV Community</td>
+<td>***</td>
+<td>sentinel-ir 0.5.9 進行普通用戶測試，第 3 輪（macOS）</td>
+</tr>
+<tr>
+<td><a href="https://www.infoq.com/news/2026/11/claude-code-review/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=global" rel="noopener noreferrer">Anthropic 公布 Claude Code 的 AI 代碼審查流程</a></td>
+<td>InfoQ</td>
+<td>***</td>
+<td>Anthropic 公布 Claude Code 的 AI 代碼審查流程</td>
+</tr>
+<tr>
+<td><a href="https://www.infoq.com/news/2026/11/apple-siri-ai-integration/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=global" rel="noopener noreferrer">Siri AI 開發者預覽版讓 iOS、iPadOS 和 macOS 應用可與 Siri 整合</a></td>
+<td>InfoQ</td>
+<td>***</td>
+<td>Siri AI 開發者預覽版讓 iOS、iPadOS 和 macOS 應用可與 Siri 整合</td>
+</tr>
+<tr>
+<td><a href="https://www.infoq.com/news/2026/11/google-ambient-agent-prod/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=global" rel="noopener noreferrer">Google 開源 Ambient Quality Agent (AQuA) 以診斷生產 AI 代理失敗</a></td>
+<td>InfoQ</td>
+<td>***</td>
+<td>Google 開源 Ambient Quality Agent (AQuA) 以診斷生產 AI 代理失敗</td>
+</tr>
+<tr>
+<td><a href="https://www.infoq.com/news/2026/11/netflix-ai-driven-observability/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=global" rel="noopener noreferrer">Netflix 將營運數據轉化為知識圖譜以推動 AI 驅動的可視化</a></td>
+<td>InfoQ</td>
+<td>***</td>
+<td>Netflix 將營運數據轉化為知識圖譜以推動 AI 驅動的可視化</td>
+</tr>
+<tr>
+<td><a href="https://www.infoq.com/podcasts/accountability-age-ai-coding-summary/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=global" rel="noopener noreferrer">Podcast：在 AI 程式碼時代的責任：誰該為 AI 撰寫的程式碼負責</a></td>
+<td>InfoQ</td>
+<td>***</td>
+<td>Podcast：探討 AI 程式碼時代的責任與誰該為 AI 撰寫的程式碼負責</td>
+</tr>
+<tr>
+<td><a href="https://www.infoq.com/news/2026/11/dropbox-cookie-auditor/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=global" rel="noopener noreferrer">Dropbox 分享其內部 Cookie 審計工具如何測試超過 200 個網頁的同意行為</a></td>
+<td>InfoQ</td>
+<td>***</td>
+<td>Dropbox 測試超過 200 個網頁的同意行為</td>
+</tr>
+<tr>
+<td><a href="https://www.infoq.com/presentations/explainable-ai-llm-agent-decisions/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=global" rel="noopener noreferrer">演講：打開黑盒子：使用 Kiji Inspector 為 AI Agent 工具選擇提供關鍵可解釋性</a></td>
+<td>InfoQ</td>
+<td>***</td>
+<td>Kiji Inspector 為 AI Agent 工具選擇提供可解釋性</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>今日總結</h2>
+<h3>三大焦點議題</h3>
+<ol>
+<li><strong>【AI 代理安全與責任】</strong> — 資安領域聚焦 AI Agent 的安全能力評估、漏洞修復速度及責任歸屬。企業如 Wiz 推出代理式修復工具，Google 開源 AQuA 診斷 AI 失敗，並探討誰該為 AI 代碼負責。</li>
+<li><strong>【AI 模型效能與成本】</strong> — 市場比較 Gemini 4 Carbon 與 Claude Fable 5.2，前者效能逼近第 1 名且成本低 4 倍。Reddit 討論 Gemini Pro Sub. 用量是否與競爭對手相當，引發使用者關注。</li>
+<li><strong>【AI 工具開發與整合】</strong> — 多項新技術推動 AI 工具落地，包括常駐 Agent、E2E 測試框架及 Siri AI 開發者預覽。Anthropic 公布 Claude Code 代碼審查流程，Netflix 轉化數據為知識圖譜。</li>
+</ol>
+<h3>跨平台熱點重疊</h3>
+<ul>
+<li><strong>AI Agent 安全</strong>：Hatena + 資安部落格 同步出現 — AI Agent 安全成為焦點，Hatena 討論家用伺服器零信任認證與 AI 友善 SSH。資安部落格則深入評估代理網路安全能力、漏洞修復速度及主動防禦策略。</li>
+<li><strong>Claude Code 與 AI 代碼</strong>：Hatena + HN + RSS 同步出現 — Claude Code 相關技術多處出現，Hatena 介紹如何製作常駐 Agent 與避免重複調查。HN 討論所有 AI 生成程式碼應開源，RSS 公布 Anthropic 代碼審查流程。</li>
+</ul>
+</article>
+</main>
+</body>
+</html>
