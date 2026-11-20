@@ -2173,5 +2173,57 @@
       "faithfulness": 3
     },
     "quality_alert": false
+  },
+  {
+    "date": "2026-11-17",
+    "overall": 3.7,
+    "scores": {
+      "relevance": 4.0,
+      "completeness": 5,
+      "faithfulness": 2
+    },
+    "quality_alert": true,
+    "quality_alert_reason": "faithfulness=2"
+  },
+  {
+    "date": "2026-11-18",
+    "overall": 3.9,
+    "scores": {
+      "relevance": 3.7,
+      "completeness": 5,
+      "faithfulness": 3
+    },
+    "quality_alert": false
+  },
+  {
+    "date": "2026-11-19",
+    "overall": 3.7,
+    "scores": {
+      "relevance": 4.2,
+      "completeness": 5,
+      "faithfulness": 2
+    },
+    "quality_alert": true,
+    "quality_alert_reason": "faithfulness=2"
+  },
+  {
+    "date": "2026-11-20",
+    "overall": 4.4,
+    "scores": {
+      "relevance": 4.3,
+      "completeness": 5,
+      "faithfulness": 4
+    },
+    "quality_alert": false
+  },
+  {
+    "date": "2026-11-21",
+    "overall": 4.6,
+    "scores": {
+      "relevance": 4.7,
+      "completeness": 5,
+      "faithfulness": 4
+    },
+    "quality_alert": false
   }
 ]

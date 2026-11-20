@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daily Brief 存檔 — 2026-11-21</title>
+<style>
+  :root { --bg: #0b0f14; --fg: #c8d3df; --accent: #4fd1c5; --dim: #5a6b7a; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2rem 1rem;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "SFMono-Regular", "Menlo", "Consolas", "Liberation Mono", monospace;
+    line-height: 1.6;
+  }
+  main { max-width: 1100px; margin: 0 auto; }
+  header { border-bottom: 1px solid var(--dim); padding-bottom: 1rem; margin-bottom: 2rem; }
+  .tagline { color: var(--accent); }
+  a { color: var(--accent); }
+  h1, h2, h3 { color: var(--fg); }
+  code, pre { background: #11161d; color: var(--accent); }
+  /* 報告表格：只讓「標題」(第一欄)與「備註」(最後一欄)兩個長文字欄限寬換行；
+     表頭與數字/類別/子版等短欄維持自然寬度、不逐字硬斷。整體放不下時橫向捲動不破版。 */
+  article { overflow-x: auto; }
+  article table { border-collapse: collapse; margin: 1rem 0; }
+  article th, article td {
+    border: 1px solid var(--dim); padding: 0.4rem 0.6rem;
+    text-align: left; vertical-align: top;
+  }
+  article th { color: var(--accent); white-space: nowrap; }
+  article td:first-child { max-width: 30ch; overflow-wrap: break-word; }
+  article td:last-child { max-width: 24ch; overflow-wrap: break-word; }
+  .meta { color: var(--dim); }
+  /* 今日重點：頂部導讀段落，左側 accent 邊條凸顯。 */
+  section.tldr { margin: 0 0 2rem; padding: 0.2rem 0 0.2rem 1rem;
+    border-left: 3px solid var(--accent); }
+  section.tldr .meta { color: var(--accent); letter-spacing: 0.05em; margin: 0 0 0.3rem; }
+  section.tldr p { margin: 0; }
+  nav.archive { margin-top: 2rem; border-top: 1px solid var(--dim); padding-top: 1rem; }
+  nav.archive ul { list-style: none; padding: 0; }
+  nav.archive li { margin: 0.25rem 0; }
+  /* 全部存檔頁：按月分組。 */
+  section.month-group { margin-bottom: 1.5rem; }
+  section.month-group h2 { color: var(--accent); font-size: 1.05rem;
+    border-bottom: 1px solid var(--dim); padding-bottom: 0.3rem; }
+  section.month-group ul { list-style: none; padding: 0;
+    display: flex; flex-wrap: wrap; gap: 0.3rem 1.4rem; }
+  section.month-group li { margin: 0.15rem 0; }
+  /* Hero 排：定位句 + 右上「關於本專案」按鈕。專案描述不直接顯示，收進 overlay。 */
+  .hero-row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+    justify-content: space-between; }
+  .about-btn { cursor: pointer; color: var(--accent); border: 1px solid var(--dim);
+    padding: 0.15rem 0.7rem; border-radius: 3px; user-select: none; white-space: nowrap; }
+  .about-btn:hover { border-color: var(--accent); }
+  /* 純 CSS overlay（無 JS）：隱藏 checkbox，label 當開關，:checked 顯示彈窗；背景 label 可關。 */
+  .about-checkbox { position: absolute; left: -9999px; }
+  .about-overlay { display: none; position: fixed; inset: 0; z-index: 100; }
+  .about-checkbox:checked ~ .about-overlay { display: block; }
+  .about-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.75); }
+  .about-panel { position: relative; max-width: 720px; margin: 6vh auto; max-height: 84vh;
+    overflow-y: auto; background: var(--bg); border: 1px solid var(--dim);
+    border-radius: 4px; padding: 1.5rem 2rem; }
+  .about-close { position: absolute; top: 0.5rem; right: 0.9rem; cursor: pointer;
+    color: var(--dim); font-size: 1.2rem; line-height: 1; text-decoration: none; }
+  .about-close:hover { color: var(--accent); }
+  /* system status block: hand-written CSS, terminal aesthetic; trend is inline SVG (no chart lib). */
+  section.status { margin-bottom: 2rem; border-bottom: 1px solid var(--dim); padding-bottom: 1rem; }
+  section.status h2 { color: var(--accent); font-size: 1rem; letter-spacing: 0.05em; }
+  .status-grid { display: flex; flex-wrap: wrap; gap: 2rem; align-items: flex-end; }
+  .status-streak { display: flex; flex-direction: column; }
+  .status-num { color: var(--accent); font-size: 2.4rem; line-height: 1; }
+  .status-label { color: var(--dim); font-size: 0.8rem; }
+  .status-trend { display: flex; flex-direction: column; flex: 1 1 240px; min-width: 200px; }
+  svg.spark { color: var(--accent); width: 100%; height: 40px; margin-top: 0.3rem; }
+  .status-rates { list-style: none; padding: 0; margin: 1rem 0 0;
+    display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; }
+  .status-rates li { display: flex; gap: 0.5rem; align-items: baseline; }
+  .status-src { color: var(--fg); }
+  .status-pct { color: var(--accent); }
+  .status-frac { color: var(--dim); font-size: 0.8rem; }
+  /* top nav：首頁 ⇄ 運行紀錄 的切換連結（終端風、無框架）。 */
+  nav.top { display: flex; gap: 1.2rem; margin: 0.3rem 0 0; font-size: 0.85rem; }
+  nav.top a { color: var(--dim); text-decoration: none; }
+  nav.top a:hover, nav.top a.on { color: var(--accent); }
+  /* 運行紀錄頁：一列一次 run（CI 執行史）。狀態矩陣為手刻小格，無圖表庫。 */
+  .runs-wrap { overflow-x: auto; }
+  table.runs { border-collapse: collapse; width: 100%; font-size: 0.85rem; margin-top: 1rem; }
+  table.runs th {
+    color: var(--dim); text-align: left; font-weight: normal; text-transform: uppercase;
+    letter-spacing: 0.06em; font-size: 0.72rem; padding: 0.3rem 0.6rem 0.5rem;
+    border-bottom: 1px solid var(--dim); white-space: nowrap;
+  }
+  table.runs td { padding: 0.45rem 0.6rem; border-bottom: 1px solid #1b232d; white-space: nowrap; }
+  table.runs tr:hover td { background: #11161d; }
+  table.runs .n { text-align: right; font-variant-numeric: tabular-nums; }
+  table.runs a.day { color: var(--fg); text-decoration: none; }
+  table.runs a.day:hover { color: var(--accent); text-decoration: underline; }
+  .rpill { font-size: 0.72rem; padding: 0.05rem 0.5rem; border-radius: 10px; border: 1px solid; }
+  .rpill.success { color: #56c271; border-color: #2c5c3a; }
+  .rpill.partial { color: #e0a52e; border-color: #6b551f; }
+  .rpill.failed { color: #e0603a; border-color: #6b3524; }
+  .rpill.unknown { color: var(--dim); border-color: var(--dim); }
+  /* absent = 該日 pipeline 整天沒跑（四份歷史皆無記錄），與 unknown 區分：
+     unknown 是「跑了但推導不出狀態」，absent 是「根本沒跑」。 */
+  .rpill.absent { color: #7a6bd6; border-color: #453c78; }
+  .rcells { display: inline-flex; gap: 3px; }
+  .rcell {
+    width: 16px; height: 16px; border-radius: 3px; display: inline-block; line-height: 16px;
+    text-align: center; font-size: 0.6rem; color: #0b0f14;
+  }
+  .rcell.ok { background: #56c271; }
+  .rcell.fail { background: #e0603a; }
+  .rcell.warn { background: #e0a52e; }
+  .rcell.na { background: #1b232d; color: var(--dim); }
+  .runs-legend { color: var(--dim); font-size: 0.72rem; margin-top: 1rem;
+    display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; }
+  .runs-legend .sw { width: 11px; height: 11px; border-radius: 2px; display: inline-block;
+    vertical-align: middle; margin-right: 0.3rem; }
+  .runs-empty { color: var(--dim); margin-top: 1.5rem; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <p class="tagline">本地 LLM 多代理自主系統</p>
+  <p class="meta">存檔日期：2026-11-21</p>
+  <p class="meta"><a href="../index.html">← 回首頁</a>　·　<a href="index.html">全部存檔</a></p>
+</header>
+<article>
+<h1>趨勢話題：2026-11-21</h1>
+<hr>
+<h2>Hatena Bookmark IT（日本市場）</h2>
+<h3>注目話題</h3>
+<table>
+<thead>
+<tr>
+<th>標題</th>
+<th>書籤數</th>
+<th>興趣度</th>
+<th>類別</th>
+<th>備註</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://zenn.dev/nttdata_tech/articles/9562962cc181a1" rel="noopener noreferrer">自分の代わりに動く Agent へ。Claude Code と Codex で作る自律改善ハーネス</a></td>
+<td>269</td>
+<td>***</td>
+<td>AI 開發工具</td>
+<td>開發者打造自律 AI Agent 工具</td>
+</tr>
+<tr>
+<td><a href="https://www.47news.jp/15262461.html" rel="noopener noreferrer">【速報】三井住友銀行情報漏洩、最大 1400 万件</a></td>
+<td>227</td>
+<td>***</td>
+<td>Web 資安 / 滲透測試</td>
+<td>三井住友銀行遭駭客竊取 1400 萬件</td>
+</tr>
+<tr>
+<td><a href="https://forest.watch.impress.co.jp/docs/serial/yajiuma/2158241.html" rel="noopener noreferrer">「httpS://」だと暗号化されず平文で送信……「PHP」に約 20 年潜んでいた脆弱性が解決／問題はいたってシンプル、なんともはや……【やじうまの杜】</a></td>
+<td>169</td>
+<td>***</td>
+<td>Web 資安 / 滲透測試</td>
+<td>PHP 發現約 20 年未修漏洞</td>
+</tr>
+</tbody>
+</table>
+<h3>全部文章（略）</h3>
+<ol>
+<li><a href="https://zenn.dev/nttdata_tech/articles/9562962cc181a1" rel="noopener noreferrer">自分の代わりに動く Agent へ。Claude Code と Codex で作る自律改善ハーネス</a> (269 users) — 開發者打造自律 AI Agent 工具</li>
+<li><a href="https://www.47news.jp/15262461.html" rel="noopener noreferrer">【速報】三井住友銀行情報漏洩、最大 1400 万件</a> (227 users) — 三井住友銀行遭駭客竊取 1400 萬件</li>
+<li><a href="https://forest.watch.impress.co.jp/docs/serial/yajiuma/2158241.html" rel="noopener noreferrer">「httpS://」だと暗号化されず平文で送信……「PHP」に約 20 年潜んでいた脆弱性が解決／問題はいたってシンプル、なんともはや……【やじうまの杜】</a> (169 users) — PHP 發現約 20 年未修漏洞</li>
+<li><a href="https://posfie.com/@techjiho/p/3QDGKHH" rel="noopener noreferrer">先頭に貼るだけのキラープロンプト 7 選、コピペ OK。→「所見を頼む前に「中学校の担任として、前向きな言葉で」と 1 行足すだけで、書き直しが半分に減りました。」</a> (165 users) — 7 個提示詞提升 AI 回答品質</li>
+<li><a href="https://www.asahi.com/articles/ASVCN30WCVCNULFA01NM.html" rel="noopener noreferrer">政府の内部資料流出か、基幹システムに不正アクセス デジタル庁発表：朝日新聞</a> (147 users) — 日本政府系統遭駭客入侵</li>
+<li><a href="https://news.mynavi.jp/techplus/article/20261120-5367457/" rel="noopener noreferrer">POS 端末 700 台超がマルウェア感染、Windows の脆弱性悪用でカード情報 100 万件超が流出</a> (58 users) — POS 機感染病毒竊取百萬卡號</li>
+<li><a href="https://gigazine.net/news/20261120-large-language-model-can-rewrite-itself/" rel="noopener noreferrer">AI 追加学習なしで自らのウェイトを書き換えて「自分自身を賢くする」ことに成功</a> (20 users) — AI 自行修改權重提升效能</li>
+<li><a href="https://www.nikkei.com/article/DGXZQOUC209MW0Q6A121C2000000/" rel="noopener noreferrer">丸井 G、顧客情報延べ 1733 万件が漏洩 委託先に不正アクセス - 日本経済新聞</a> (18 users) — 丸井 G 委託商竊取 1733 萬件</li>
+<li><a href="https://japan.cnet.com/article/35255218/" rel="noopener noreferrer">Gemini 能替換操作 Mac，可跨應用程式或檔案自動執行任務</a> (15 users) — Gemini 可自動操作 Mac 應用程式</li>
+<li><a href="https://www.smbc.co.jp/news/pdf/j20261120_01.pdf" rel="noopener noreferrer">業務委託先への不正アクセスによる情報漏えいについて</a> (13 users) — 三井住友銀行公告 KARTE 洩漏</li>
+<li><a href="https://jbpress.ismedia.jp/articles/-/98148" rel="noopener noreferrer">情報漏洩 3 億件超の時代、経営者が問われるのは「どう守るか」よりも「何を持たないか」、顧客情報を預かる資格 KARTE への不正アクセスとソースネクストの大量流出が示した、顧客情報を持ちすぎる経営の死角 ／ JBpress (ジェイビープレス)</a> (9 users) — 資訊洩漏時代企業應減少存儲</li>
+<li><a href="https://www.nikkei.com/article/DGXZQOUC204SK0Q6A121C2000000/" rel="noopener noreferrer">プレイド「KARTE」の情報漏洩 2200 社 サービス停止で 20 億円の赤字へ - 日本経済新聞</a> (8 users) — KARTE 洩漏致服務商虧損 20 億</li>
+<li><a href="https://qiita.com/TaigoKuriyama/items/850a26760fc3c8d111ad" rel="noopener noreferrer">Codex App 的 Computer Use 是怎麼運作的 - Qiita</a> (7 users) — 解析 Codex App 電腦操作機制</li>
+<li><a href="https://plaid.co.jp/news/20261120/" rel="noopener noreferrer">「KARTE」への不正アクセスに関する当社調査結果と、サービス再開の見通し等のお知らせ</a> (6 users) — KARTE 洩漏調查結果與復工</li>
+<li><a href="https://www.riken.jp/pr/news/2026/20261120_1/index.html" rel="noopener noreferrer">スーパーコンピュータ「富岳」および「理究（りきゅう）」への不正アクセスに関する調査状況について（第 2 報） ／ 理化学研究所</a> (6 users) — 理研超算中心遭駭客入侵</li>
+<li><a href="https://www.asahi.com/sp/articles/ASVCN30WCVCNULFA01NM.html?linkType=article&amp;id=ASVCN30WCVCNULFA01NM" rel="noopener noreferrer">政府の内部資料流出か、基幹システムに不正アクセス  デジタル庁発表：朝日新聞</a> (5 users) — 數位廳公布政府系統遭入侵</li>
+</ol>
+<hr>
+<h2>Hacker News（全球）</h2>
+<h3>注目話題</h3>
+<table>
+<thead>
+<tr>
+<th>標題</th>
+<th>分數</th>
+<th>興趣度</th>
+<th>類別</th>
+<th>備註</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://news.ycombinator.com/item?id=50563148" rel="noopener noreferrer">Claude 解決了黑洞物理學中的兩個未解難題</a></td>
+<td>539pt</td>
+<td>***</td>
+<td>重要 AI 模型 / 研究發布</td>
+<td>Claude 解決黑洞物理學兩個未解難題</td>
+</tr>
+<tr>
+<td><a href="https://news.ycombinator.com/item?id=50572503" rel="noopener noreferrer">Frostbite：由 AI 發現、設計並驗證的全新 CPU 架構架構</a></td>
+<td>482pt</td>
+<td>***</td>
+<td>重要 AI 模型 / 研究發布</td>
+<td>AI 發現設計並驗證全新 CPU</td>
+</tr>
+<tr>
+<td><a href="https://news.ycombinator.com/item?id=50569226" rel="noopener noreferrer">OpenSSL: EVP_EncodeBlock() 緩衝區溢位 (CVE-2026-121481, CVSS 9.8)</a></td>
+<td>347pt</td>
+<td>***</td>
+<td>Web 資安 / 滲透測試</td>
+<td>OpenSSL 出現嚴重緩衝區溢位漏洞</td>
+</tr>
+</tbody>
+</table>
+<h3>全部文章（部分）</h3>
+<ol>
+<li><a href="https://news.ycombinator.com/item?id=50563148" rel="noopener noreferrer">Claude 解決了黑洞物理學中的兩個未解難題</a> (539pt) — Claude 解決黑洞物理學兩個未解難題
+   💬 社群觀點：多數人肯定 AI 解決黑洞難題，但有人質疑未署名且缺乏同行評審。</li>
+<li><a href="https://news.ycombinator.com/item?id=50572503" rel="noopener noreferrer">Frostbite：由 AI 發現、設計並驗證的全新 CPU 架構架構</a> (482pt) — AI 發現設計並驗證全新 CPU
+   💬 社群觀點：多數人看好 AI 設計晶片，但有人質疑基準測試太小且未驗證實際效能。</li>
+<li><a href="https://news.ycombinator.com/item?id=50569226" rel="noopener noreferrer">OpenSSL: EVP_EncodeBlock() 緩衝區溢位 (CVE-2026-121481, CVSS 9.8)</a> (347pt) — OpenSSL 出現嚴重緩衝區溢位漏洞
+   💬 社群觀點：多數人認為 CVSS 9.8 被誇大，因需超大輸入才能觸發。</li>
+<li><a href="https://news.ycombinator.com/item?id=50526023" rel="noopener noreferrer">Show HN：我製作了一個效率提升 60 倍的音訊轉 MIDI 模型</a> (152pt) — 使用者製作效率提升 60 倍音訊轉 MIDI
+   💬 社群觀點：多數人肯定模型效能與開源價值，但有人質疑重疊頻率識別準確度及實時轉譯可行性。</li>
+<li><a href="https://news.ycombinator.com/item?id=50577265" rel="noopener noreferrer">語言模型可以自行重寫自己的權重</a> (133pt) — 語言模型可自行重寫自身權重
+   💬 社群觀點：多數人認為模型可自我優化，但有人質疑僅是過度擬合或發現特定 bug。</li>
+<li><a href="https://news.ycombinator.com/item?id=50572430" rel="noopener noreferrer">英國冰箱免受駭客攻擊</a> (133pt) — 英國冰箱免受駭客攻擊
+   💬 社群觀點：多數人認為這是政府主動工作的佳績，但有人質疑為何冰箱需聯網。</li>
+<li><a href="https://news.ycombinator.com/item?id=50531009" rel="noopener noreferrer">Lovable: 現在可以並行探索任何想法，無需觸碰線上版本</a> (16pt) — Lovable 可並行探索想法
+   💬 社群觀點：部分使用者質疑此功能僅為提示詞，並擔心資料洩漏風險。</li>
+</ol>
+<hr>
+<h2>Reddit</h2>
+<h3>注目話題</h3>
+<table>
+<thead>
+<tr>
+<th>標題</th>
+<th>票數</th>
+<th>留言數</th>
+<th>興趣度</th>
+<th>類別</th>
+<th>子版</th>
+<th>備註</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3>依類別列表</h3>
+<hr>
+<h2>資安部落格</h2>
+<table>
+<thead>
+<tr>
+<th>標題</th>
+<th>來源</th>
+<th>興趣度</th>
+<th>備註</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://www.aikido.dev/blog/ai-incidents-root-causes-patterns" rel="noopener noreferrer">2026 年 AI 事件：惡意代理、失竊金鑰及其他熟悉的故事</a></td>
+<td>aikido.dev</td>
+<td>***</td>
+<td>回顧 2026 年 50 起 AI 安全事件</td>
+</tr>
+<tr>
+<td><a href="https://www.aikido.dev/blog/aikido-launches-agentic-pentesting-for-ios-apps" rel="noopener noreferrer">Aikido 推出 iOS 應用程式的代理滲透測試</a></td>
+<td>aikido.dev</td>
+<td>***</td>
+<td>Aikido 推出 iOS 應用程式代理滲透測試</td>
+</tr>
+<tr>
+<td><a href="https://www.aikido.dev/blog/ruby2shell" rel="noopener noreferrer">Ruby2Shell：關鍵 Ruby RCE，受影響版本與修復方法 (CVE-2026-132825)</a></td>
+<td>aikido.dev</td>
+<td>***</td>
+<td>Ruby2Shell 關鍵漏洞可執行代碼</td>
+</tr>
+<tr>
+<td><a href="https://www.aikido.dev/blog/php-security-release-19-november-2026-cve-2026-115560" rel="noopener noreferrer">PHP 關鍵安全更新，11 月 19 日 (CVE-2026-129289, CVE-2026-115560)</a></td>
+<td>aikido.dev</td>
+<td>***</td>
+<td>PHP 19 日更新修補 18 個漏洞</td>
+</tr>
+<tr>
+<td><a href="https://www.aikido.dev/blog/deep-review-finds-java4shell-in-pr" rel="noopener noreferrer">Aikido 的 Deep Review 在引入 Java4Shell 的 PR 中發現了漏洞</a></td>
+<td>aikido.dev</td>
+<td>***</td>
+<td>Aikido Deep Review 發現 Java4Shell</td>
+</tr>
+<tr>
+<td><a href="https://www.aikido.dev/blog/nginx2root-critical-nginx-rce-vulnerabilities" rel="noopener noreferrer">nginx2root：關鍵 nginx 漏洞，包括一個 RCE 【CVE-2026-123007, CVE-2026-123634, CVE-2026-123633, CVE-2026-121810, CVE-2026-113425】</a></td>
+<td>aikido.dev</td>
+<td>***</td>
+<td>nginx2root 關鍵漏洞含遠端程式碼執行</td>
+</tr>
+<tr>
+<td><a href="https://www.aikido.dev/blog/two-malicious-agent-framework-releases-hit-pypi-in-33-minutes" rel="noopener noreferrer">兩個惡意 agent-framework 在 PyPI 上於 33 分鐘內發布</a></td>
+<td>aikido.dev</td>
+<td>***</td>
+<td>PyPI 兩惡意代理框架 33 分鐘內發布</td>
+</tr>
+<tr>
+<td><a href="https://www.wiz.io/blog/phpaftershell-critical-php-rce-vulnerabilities-cve-2026-126714" rel="noopener noreferrer">phpAfterShell 與關鍵 PHP RCE 漏洞：您需要知道的一切</a></td>
+<td>wiz.io</td>
+<td>***</td>
+<td>phpAfterShell 與 PHP RCE 漏洞</td>
+</tr>
+<tr>
+<td><a href="https://www.wiz.io/blog/nginx-http2-rce-vulnerabilities" rel="noopener noreferrer">NGINX 未認證遠端程式碼執行：CVE-2026-123633 與 CVE-2026-123007</a></td>
+<td>wiz.io</td>
+<td>***</td>
+<td>NGINX 未認證遠端程式碼執行</td>
+</tr>
+<tr>
+<td><a href="https://www.wiz.io/blog/malicious-version-of-microsofts-agent-framework-published-to-pypi" rel="noopener noreferrer">Microsoft agent-framework 遭入侵：金鑰竊取工具針對 Azure 與 CI 流程</a></td>
+<td>wiz.io</td>
+<td>***</td>
+<td>Microsoft agent-framework 遭入侵竊取金鑰</td>
+</tr>
+<tr>
+<td><a href="https://www.wiz.io/blog/introducing-wiz-ai-security-agent" rel="noopener noreferrer">推出 Wiz AI 安全代理</a></td>
+<td>wiz.io</td>
+<td>***</td>
+<td>推出 Wiz AI 安全代理</td>
+</tr>
+<tr>
+<td><a href="https://www.wiz.io/blog/inside-green-agent-investigation" rel="noopener noreferrer">The Green Agent POV: Formulating the Fix for an Exposed Container with Sensitive Data Access</a></td>
+<td>wiz.io</td>
+<td>***</td>
+<td>Green Agent 修復敏感數據容器</td>
+</tr>
+<tr>
+<td><a href="https://www.wiz.io/blog/aspm-ai-era-pt-3-fixing-risk-code-speed" rel="noopener noreferrer">ASPM in the AI Era Part 3: Fixing Risk at the Speed of Code</a></td>
+<td>wiz.io</td>
+<td>***</td>
+<td>ASPM AI 時代加速風險修復</td>
+</tr>
+<tr>
+<td><a href="https://www.wiz.io/blog/cyber-model-arena-ai-benchmark" rel="noopener noreferrer">How to Evaluate AI Agent Cybersecurity Capabilities</a></td>
+<td>wiz.io</td>
+<td>***</td>
+<td>評估 AI Agent 網路安全能力</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/bazuka-android-malware-uses-fake-screen.html" rel="noopener noreferrer">Bazuka Android 惡意軟體使用偽螢幕覆蓋層隱藏憑證竊取與設備控制</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>Bazuka 惡意軟體整合 LLM 竊取憑證</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/new-linux-kvm-flaw-cve-2026-99312-lets.html" rel="noopener noreferrer">Linux KVM 漏洞 CVE-2026-99312 讓虛擬機可存取 AMD 主機記憶體</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>Linux KVM 漏洞讓虛擬機存取主機記憶體</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/the-path-to-ai-autonomy-in-soc.html" rel="noopener noreferrer">SOC 中 AI 自主性的道路</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>36% CISO 同意讓 AI 代理在 SOC 中自主</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/sonicwall-warns-gen-6-firewalls-wont.html" rel="noopener noreferrer">SonicWall 警告第 6 代防火牆將無法獲得安全更新，即使存在關鍵漏洞</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>SonicWall 第 6 代防火牆將無安全更新</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/hackers-exploit-critical-cisco.html" rel="noopener noreferrer">黑客利用關鍵 Cisco Expressway 漏洞，入侵四台設備並進入內部網路</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>黑客利用 Cisco Expressway 漏洞入侵俄國組織</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/china-linked-hackers-exploit-critical.html" rel="noopener noreferrer">中國關聯駭客利用關鍵 VMware vCenter 零日漏洞獲取管理權限並竊取資料</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>中國駭客利用 VMware vCenter 零日漏洞竊取資料</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/romulus-clickfix-attacks-deliver-rat.html" rel="noopener noreferrer">ROMULUS ClickFix 攻擊傳遞可監控用戶並控制電腦的遠端存取惡意程式</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>ROMULUS ClickFix 攻擊傳遞可監控用戶的遠端存取惡意程式</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/new-unpatched-windows-0-day-fastunlock.html" rel="noopener noreferrer">新未修補 Windows 零日技術 FastUnlock 讓持有鎖定電腦者可執行程式</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>新未修補 Windows 零日技術讓持有鎖定電腦者可執行程式</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/threatsday-gpt-62-jailbreak-flaws.html" rel="noopener noreferrer">ThreatsDay: GPT-6.2 越獄漏洞、BubbleLoader PNG 惡意程式、5 億美元勒索要求 + 更多故事</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>ThreatsDay: GPT-6.2 越獄漏洞、BubbleLoader PNG 惡意程式</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/phpaftershell-explained-how-hackers.html" rel="noopener noreferrer">phpAfterShell 解析：駭客如何將 PHP 會話漏洞轉化為程式碼執行</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>phpAfterShell 解析：駭客如何將 PHP 會話漏洞轉化為程式碼執行</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/critical-vmware-vcenter-flaw-cvss-98.html" rel="noopener noreferrer">關鍵 VMware vCenter 零日漏洞讓網路攻擊者可繞過認證</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>關鍵 VMware vCenter 零日漏洞讓網路攻擊者可繞過認證</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/drupal-patches-critical-installer-flaw.html" rel="noopener noreferrer">Drupal 修復關鍵安裝器漏洞，可能讓未認證攻擊者控制網站</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>Drupal 修復關鍵安裝器漏洞，可能讓未認證攻擊者控制網站</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/everything-is-web-application-including.html" rel="noopener noreferrer">一切皆為 Web 應用程式，包括防火牆</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>一切皆為 Web 應用程式，包括防火牆</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/n-able-confirms-hackers-accessed-cloud.html" rel="noopener noreferrer">駭客入侵 N-able Cloud Server，中斷 3 個區域的郵件安全管理</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>黑客入侵 N-able Cloud Server，中斷 3 個區域的郵件安全管理</td>
+</tr>
+<tr>
+<td><a href="https://dev.to/veritaschain/notes-on-the-agent-framework-pypi-compromise-a-pth-hook-an-hour-on-pypi-and-what-a-valid-5cd5" rel="noopener noreferrer">關於 agent-framework PyPI 遭竊取憑證：.pth hook、PyPI 上一小時，以及有效憑證無法告訴你的事</a></td>
+<td>DEV Community</td>
+<td>***</td>
+<td>agent-framework PyPI 遭竊取憑證</td>
+</tr>
+<tr>
+<td><a href="https://dev.to/callkarma/test-that-your-chatbot-says-its-an-ai-a-tiny-transcript-checker-in-python-c4" rel="noopener noreferrer">測試你的聊天機器人是否為 AI：Python 中的小型轉錄檢查器</a></td>
+<td>DEV Community</td>
+<td>***</td>
+<td>Python 轉錄檢查器測試聊天機器人</td>
+</tr>
+<tr>
+<td><a href="https://dev.to/callkarma/your-ai-found-a-customer-trend-check-it-in-python-before-it-reaches-a-slide-ej" rel="noopener noreferrer">讓 AI 找出客戶「趨勢」，在 Python 中檢查再上簡報</a></td>
+<td>DEV Community</td>
+<td>***</td>
+<td>Python 檢查 AI 客戶趨勢再上簡報</td>
+</tr>
+<tr>
+<td><a href="https://dev.to/yanming_liu_e0e17dd6bf1be/european-commission-confirms-ai-assisted-artex-hack-that-took-hr-systems-offline-for-10-days-1n9g" rel="noopener noreferrer">歐盟委員會確認 AI 輔助 ARTEX 駭客攻擊導致 HR 系統離線 10 天</a></td>
+<td>DEV Community</td>
+<td>***</td>
+<td>歐盟 AI 駭客致 HR 系統離線 10 天</td>
+</tr>
+<tr>
+<td><a href="https://dev.to/sandscale/running-untrusted-pull-request-code-from-agents-and-contributors-la9" rel="noopener noreferrer">從代理與貢獻者執行不受信任的 Pull Request 程式碼</a></td>
+<td>DEV Community</td>
+<td>***</td>
+<td>執行不受信 Pull Request 程式碼</td>
+</tr>
+<tr>
+<td><a href="https://dev.to/digitalocean/how-do-you-tune-speculative-decoding-in-a-production-serving-stack-6li" rel="noopener noreferrer">如何在生產服務棧中調整猜測式解碼？</a></td>
+<td>DEV Community</td>
+<td>***</td>
+<td>生產服務棧調整猜測式解碼</td>
+</tr>
+<tr>
+<td><a href="https://dev.to/haydengoracke/what-broke-when-i-put-an-ai-voice-agent-on-real-phone-lines-f4b" rel="noopener noreferrer">將 AI 語音代理放到真實電話線時出了什麼問題</a></td>
+<td>DEV Community</td>
+<td>***</td>
+<td>AI 語音代理放真實電話線出問題</td>
+</tr>
+<tr>
+<td><a href="https://www.infoq.com/news/2026/11/google-substrate-gvisor-cncf/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=global" rel="noopener noreferrer">Google 捐贈 Agent Substrate 與 gVisor 給 CNCF，以確保 AI 代理大規模安全</a></td>
+<td>InfoQ</td>
+<td>***</td>
+<td>Google 捐贈 AI 代理安全工具</td>
+</tr>
+<tr>
+<td><a href="https://www.infoq.com/news/2026/11/aws-emulator-local-testing/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=global" rel="noopener noreferrer">AWS 發布完全由 AI 代理打造的免費本地 AWS 模擬器</a></td>
+<td>InfoQ</td>
+<td>***</td>
+<td>AWS 發布 AI 代理打造的免費模擬器</td>
+</tr>
+<tr>
+<td><a href="https://www.infoq.com/presentations/ai-assisted-software-delivery/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=global" rel="noopener noreferrer">演講：AI 輔助軟體交付：從程式碼到生產</a></td>
+<td>InfoQ</td>
+<td>***</td>
+<td>AI 輔助軟體交付演講分享策略</td>
+</tr>
+<tr>
+<td><a href="https://www.infoq.com/news/2026/11/ai-staff-engineer/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=global" rel="noopener noreferrer">QCon San Francisco 2026：用 AI 倍增團隊成為資深工程師</a></td>
+<td>InfoQ</td>
+<td>***</td>
+<td>QCon 2026 用 AI 倍增資深工程師團隊</td>
+</tr>
+<tr>
+<td><a href="https://www.infoq.com/news/2026/11/healthy-code-AI-tokens/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=global" rel="noopener noreferrer">用人工智慧撰寫健康代碼所需 Token 更少</a></td>
+<td>InfoQ</td>
+<td>***</td>
+<td>AI 撰寫健康代碼所需 Token 更少</td>
+</tr>
+<tr>
+<td><a href="https://www.infoq.com/presentations/rust-ai-symposium-agent-client-protocol/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=global" rel="noopener noreferrer">演講：RIIIR：用 AI 重寫為「地道」Rust（附範例）</a></td>
+<td>InfoQ</td>
+<td>***</td>
+<td>演講用 AI 重寫地道 Rust</td>
+</tr>
+<tr>
+<td><a href="https://www.infoq.com/presentations/bookingcom-ml-data-platform-evolution/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=global" rel="noopener noreferrer">演講：Booking.com AI 演進背後的未修飾故事</a></td>
+<td>InfoQ</td>
+<td>***</td>
+<td>演講分享 Booking.com AI 演進故事</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>今日總結</h2>
+<h3>三大焦點議題</h3>
+<ol>
+<li><strong>【AI 代理安全】</strong> — 多個來源報導 AI 代理相關的安全風險，包括惡意代理在 PyPI 上快速發布竊取憑證、AI 語音代理在真實電話線運作失靈，以及歐盟委員會確認 AI 輔助駭客攻擊導致 HR 系統離線。</li>
+<li><strong>【資安漏洞更新】</strong> — 今日有多個關鍵安全漏洞被揭露與修補，涵蓋 PHP、OpenSSL、Ruby2Shell 及 Nginx 等軟體。部分漏洞如 OpenSSL 緩衝區溢位評級極高，顯示系統安全面臨嚴峻挑戰。</li>
+<li><strong>【AI 自主技術】</strong> — 研究顯示 AI 可無需追加學習自行修改內部權重以提升效能，並有工具能自動執行工作與記憶指令。此技術突破展現 AI 在自我優化與跨應用程式操作上的潛力。</li>
+</ol>
+<h3>跨平台熱點重疊</h3>
+<ul>
+<li><strong>AI 代理安全</strong>：資安部落格 + RSS 同步出現 — 惡意 agent-framework 在 PyPI 上快速發布竊取憑證，Microsoft agent-framework 亦遭入侵植入金鑰竊取工具。</li>
+<li><strong>資安漏洞更新</strong>：Hatena + HN + 資安部落格 同步出現 — PHP 發現約 20 年未修漏洞導致 httpS:// 協議下仍會以平文傳送，OpenSSL 出現嚴重緩衝區溢位漏洞，Ruby2Shell 為關鍵 Ruby RCE 漏洞。</li>
+<li><strong>AI 自主技術</strong>：Hatena + HN 同步出現 — 研究團隊發表論文顯示 AI 可無需追加學習自行修改內部權重以提升效能，並有工具能自動執行工作與記憶指令。</li>
+</ul>
+</article>
+</main>
+</body>
+</html>
