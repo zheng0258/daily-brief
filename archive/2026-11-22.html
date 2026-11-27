@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daily Brief 存檔 — 2026-11-22</title>
+<style>
+  :root { --bg: #0b0f14; --fg: #c8d3df; --accent: #4fd1c5; --dim: #5a6b7a; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2rem 1rem;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "SFMono-Regular", "Menlo", "Consolas", "Liberation Mono", monospace;
+    line-height: 1.6;
+  }
+  main { max-width: 1100px; margin: 0 auto; }
+  header { border-bottom: 1px solid var(--dim); padding-bottom: 1rem; margin-bottom: 2rem; }
+  .tagline { color: var(--accent); }
+  a { color: var(--accent); }
+  h1, h2, h3 { color: var(--fg); }
+  code, pre { background: #11161d; color: var(--accent); }
+  /* 報告表格：只讓「標題」(第一欄)與「備註」(最後一欄)兩個長文字欄限寬換行；
+     表頭與數字/類別/子版等短欄維持自然寬度、不逐字硬斷。整體放不下時橫向捲動不破版。 */
+  article { overflow-x: auto; }
+  article table { border-collapse: collapse; margin: 1rem 0; }
+  article th, article td {
+    border: 1px solid var(--dim); padding: 0.4rem 0.6rem;
+    text-align: left; vertical-align: top;
+  }
+  article th { color: var(--accent); white-space: nowrap; }
+  article td:first-child { max-width: 30ch; overflow-wrap: break-word; }
+  article td:last-child { max-width: 24ch; overflow-wrap: break-word; }
+  .meta { color: var(--dim); }
+  /* 今日重點：頂部導讀段落，左側 accent 邊條凸顯。 */
+  section.tldr { margin: 0 0 2rem; padding: 0.2rem 0 0.2rem 1rem;
+    border-left: 3px solid var(--accent); }
+  section.tldr .meta { color: var(--accent); letter-spacing: 0.05em; margin: 0 0 0.3rem; }
+  section.tldr p { margin: 0; }
+  nav.archive { margin-top: 2rem; border-top: 1px solid var(--dim); padding-top: 1rem; }
+  nav.archive ul { list-style: none; padding: 0; }
+  nav.archive li { margin: 0.25rem 0; }
+  /* 全部存檔頁：按月分組。 */
+  section.month-group { margin-bottom: 1.5rem; }
+  section.month-group h2 { color: var(--accent); font-size: 1.05rem;
+    border-bottom: 1px solid var(--dim); padding-bottom: 0.3rem; }
+  section.month-group ul { list-style: none; padding: 0;
+    display: flex; flex-wrap: wrap; gap: 0.3rem 1.4rem; }
+  section.month-group li { margin: 0.15rem 0; }
+  /* Hero 排：定位句 + 右上「關於本專案」按鈕。專案描述不直接顯示，收進 overlay。 */
+  .hero-row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+    justify-content: space-between; }
+  .about-btn { cursor: pointer; color: var(--accent); border: 1px solid var(--dim);
+    padding: 0.15rem 0.7rem; border-radius: 3px; user-select: none; white-space: nowrap; }
+  .about-btn:hover { border-color: var(--accent); }
+  /* 純 CSS overlay（無 JS）：隱藏 checkbox，label 當開關，:checked 顯示彈窗；背景 label 可關。 */
+  .about-checkbox { position: absolute; left: -9999px; }
+  .about-overlay { display: none; position: fixed; inset: 0; z-index: 100; }
+  .about-checkbox:checked ~ .about-overlay { display: block; }
+  .about-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.75); }
+  .about-panel { position: relative; max-width: 720px; margin: 6vh auto; max-height: 84vh;
+    overflow-y: auto; background: var(--bg); border: 1px solid var(--dim);
+    border-radius: 4px; padding: 1.5rem 2rem; }
+  .about-close { position: absolute; top: 0.5rem; right: 0.9rem; cursor: pointer;
+    color: var(--dim); font-size: 1.2rem; line-height: 1; text-decoration: none; }
+  .about-close:hover { color: var(--accent); }
+  /* system status block: hand-written CSS, terminal aesthetic; trend is inline SVG (no chart lib). */
+  section.status { margin-bottom: 2rem; border-bottom: 1px solid var(--dim); padding-bottom: 1rem; }
+  section.status h2 { color: var(--accent); font-size: 1rem; letter-spacing: 0.05em; }
+  .status-grid { display: flex; flex-wrap: wrap; gap: 2rem; align-items: flex-end; }
+  .status-streak { display: flex; flex-direction: column; }
+  .status-num { color: var(--accent); font-size: 2.4rem; line-height: 1; }
+  .status-label { color: var(--dim); font-size: 0.8rem; }
+  .status-trend { display: flex; flex-direction: column; flex: 1 1 240px; min-width: 200px; }
+  svg.spark { color: var(--accent); width: 100%; height: 40px; margin-top: 0.3rem; }
+  .status-rates { list-style: none; padding: 0; margin: 1rem 0 0;
+    display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; }
+  .status-rates li { display: flex; gap: 0.5rem; align-items: baseline; }
+  .status-src { color: var(--fg); }
+  .status-pct { color: var(--accent); }
+  .status-frac { color: var(--dim); font-size: 0.8rem; }
+  /* top nav：首頁 ⇄ 運行紀錄 的切換連結（終端風、無框架）。 */
+  nav.top { display: flex; gap: 1.2rem; margin: 0.3rem 0 0; font-size: 0.85rem; }
+  nav.top a { color: var(--dim); text-decoration: none; }
+  nav.top a:hover, nav.top a.on { color: var(--accent); }
+  /* 運行紀錄頁：一列一次 run（CI 執行史）。狀態矩陣為手刻小格，無圖表庫。 */
+  .runs-wrap { overflow-x: auto; }
+  table.runs { border-collapse: collapse; width: 100%; font-size: 0.85rem; margin-top: 1rem; }
+  table.runs th {
+    color: var(--dim); text-align: left; font-weight: normal; text-transform: uppercase;
+    letter-spacing: 0.06em; font-size: 0.72rem; padding: 0.3rem 0.6rem 0.5rem;
+    border-bottom: 1px solid var(--dim); white-space: nowrap;
+  }
+  table.runs td { padding: 0.45rem 0.6rem; border-bottom: 1px solid #1b232d; white-space: nowrap; }
+  table.runs tr:hover td { background: #11161d; }
+  table.runs .n { text-align: right; font-variant-numeric: tabular-nums; }
+  table.runs a.day { color: var(--fg); text-decoration: none; }
+  table.runs a.day:hover { color: var(--accent); text-decoration: underline; }
+  .rpill { font-size: 0.72rem; padding: 0.05rem 0.5rem; border-radius: 10px; border: 1px solid; }
+  .rpill.success { color: #56c271; border-color: #2c5c3a; }
+  .rpill.partial { color: #e0a52e; border-color: #6b551f; }
+  .rpill.failed { color: #e0603a; border-color: #6b3524; }
+  .rpill.unknown { color: var(--dim); border-color: var(--dim); }
+  /* absent = 該日 pipeline 整天沒跑（四份歷史皆無記錄），與 unknown 區分：
+     unknown 是「跑了但推導不出狀態」，absent 是「根本沒跑」。 */
+  .rpill.absent { color: #7a6bd6; border-color: #453c78; }
+  .rcells { display: inline-flex; gap: 3px; }
+  .rcell {
+    width: 16px; height: 16px; border-radius: 3px; display: inline-block; line-height: 16px;
+    text-align: center; font-size: 0.6rem; color: #0b0f14;
+  }
+  .rcell.ok { background: #56c271; }
+  .rcell.fail { background: #e0603a; }
+  .rcell.warn { background: #e0a52e; }
+  .rcell.na { background: #1b232d; color: var(--dim); }
+  .runs-legend { color: var(--dim); font-size: 0.72rem; margin-top: 1rem;
+    display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; }
+  .runs-legend .sw { width: 11px; height: 11px; border-radius: 2px; display: inline-block;
+    vertical-align: middle; margin-right: 0.3rem; }
+  .runs-empty { color: var(--dim); margin-top: 1.5rem; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <p class="tagline">本地 LLM 多代理自主系統</p>
+  <p class="meta">存檔日期：2026-11-22</p>
+  <p class="meta"><a href="../index.html">← 回首頁</a>　·　<a href="index.html">全部存檔</a></p>
+</header>
+<article>
+<h1>趨勢話題：2026-11-22</h1>
+<hr>
+<h2>Hatena Bookmark IT（日本市場）</h2>
+<h3>注目話題</h3>
+<table>
+<thead>
+<tr>
+<th>標題</th>
+<th>書籤數</th>
+<th>興趣度</th>
+<th>類別</th>
+<th>備註</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://smhn.info/202611-gemini-subscription-third-party-harness-december-2" rel="noopener noreferrer">どれだけ Gemini が賢くなっても AI オタクが避ける理由。ついに解消の可能性 - すまほん!!</a></td>
+<td>249</td>
+<td>***</td>
+<td>AI 開發工具</td>
+<td>Gemini 匹敵新模型出現，AI 用戶仍少</td>
+</tr>
+<tr>
+<td><a href="https://github.com/mitaku/andon" rel="noopener noreferrer">GitHub - mitaku/andon: A one-person software factory: AI coding agents take tasks from a ledger through review to merge, and call the human only for decisions only they can make.</a></td>
+<td>68</td>
+<td>***</td>
+<td>AI 開發工具</td>
+<td>GitHub 推出 AI 代碼工廠 Andon</td>
+</tr>
+<tr>
+<td><a href="https://www.nikkei.com/article/DGXZQOGN18CYM0Y6A111C2000000/" rel="noopener noreferrer">"パッチ地獄" が米 IT 障害誘発、AI がせかす脆弱性修正 銀行や空港停止 - 日本経済新聞</a></td>
+<td>47</td>
+<td>***</td>
+<td>Web 資安 / 滲透測試</td>
+<td>AI 加速修補致美 IT 系統頻停</td>
+</tr>
+</tbody>
+</table>
+<h3>全部文章（略）</h3>
+<ol>
+<li><a href="https://smhn.info/202611-gemini-subscription-third-party-harness-december-2" rel="noopener noreferrer">どれだけ Gemini が賢くなっても AI オタクが避ける理由。ついに解消の可能性 - すまほん!!</a> (249 users) — Gemini 匹敵新模型出現，AI 用戶仍少</li>
+<li><a href="https://github.com/mitaku/andon" rel="noopener noreferrer">GitHub - mitaku/andon: A one-person software factory: AI coding agents take tasks from a ledger through review to merge, and call the human only for decisions only they can make.</a> (68 users) — GitHub 推出 AI 代碼工廠 Andon</li>
+<li><a href="https://www.nikkei.com/article/DGXZQOGN18CYM0Y6A111C2000000/" rel="noopener noreferrer">"パッチ地獄" が米 IT 障害誘発、AI がせかす脆弱性修正 銀行や空港停止 - 日本経済新聞</a> (47 users) — AI 加速修補致美 IT 系統頻停</li>
+<li><a href="https://dev.henry.jp/entry/e2e-repository" rel="noopener noreferrer">なぜヘンリーの E2E リポジトリは整理されないまま膨らみ続けたのか。AI で加速した開発とガードレール - 株式会社ヘンリー エンジニアブログ</a> (40 users) — 亨利工程師用 AI 加速開發流程</li>
+<li><a href="https://github.com/fkubota/understand-mode" rel="noopener noreferrer">GitHub - fkubota/understand-mode: Claude Code の出力・PR・コードを、付箋のホワイトボードで寄り道しながら理解する /understand スキル</a> (19 users) — GitHub 工具可理解 Claude Code 輸出</li>
+<li><a href="https://www.asahi.com/articles/ASVCP10Z2VCPUHBI00GM.html" rel="noopener noreferrer">超難問「リーマン予想」AI と証明か 米アンソロピックの数学者発表：朝日新聞</a> (19 users) — Anthropic 數學家與 AI 證明黎曼猜想</li>
+<li><a href="https://hatena.zoom.us/webinar/register/2217624929911/WN_UyuXGu7hRfSejKa5G_lUGg" rel="noopener noreferrer">「脫 WordPress」網路研討會：解決安全疑慮與營運負擔的 SaaS 型 CMS 遷移</a> (14 users) — 研討會介紹 SaaS CMS 替代 WordPress</li>
+<li><a href="https://www.asahi.com/articles/ASVCP2WB0VCPDIFI008M.html" rel="noopener noreferrer">"AI が私を追い越した" リーマン予想「証明」の数学者自身も驚き：朝日新聞</a> (9 users) — 數學家驚嘆 AI 證明百年難題</li>
+<li><a href="https://thinkingmachines.ai/news/inkling-2-mini/" rel="noopener noreferrer">推出 Inkling 2 Mini：可於筆記型電腦運行的快速強勁模型</a> (9 users) — 推出可筆記本運行的 Inkling 2 Mini</li>
+<li><a href="https://note.com/katobungen/n/n9c2bb939b9c7" rel="noopener noreferrer">"リーマン予想の証明"の検証は現在どこまで進んでいるか｜加藤文元</a> (6 users) — 社群驗證 AI 黎曼猜想證明進度</li>
+<li><a href="https://note.com/nyxfoundation/n/n782d4fb32344" rel="noopener noreferrer">Nyx Foundation 向 Ethereum Foundation 交付形式驗證驅動的 LLM 漏洞診斷原型</a> (6 users) — Nyx 向以太坊交付 LLM 漏洞診斷</li>
+<li><a href="https://www.itmedia.co.jp/mobile/articles/2611/20/news069.html" rel="noopener noreferrer">Google、Apple 帳號遭盜用導致 PayPay 不正使用，官方發警告</a> (6 users) — PayPay 遭 Google Apple 帳號盜用</li>
+<li><a href="https://japan.cnet.com/article/35255244/" rel="noopener noreferrer">相次ぐシステム障害、AI はどこまで関係しているのか--「12 月はさらに深刻に」と専門家</a> (4 users) — 專家警告 AI 導致系統故障加劇</li>
+</ol>
+<hr>
+<h2>Hacker News（全球）</h2>
+<h3>注目話題</h3>
+<table>
+<thead>
+<tr>
+<th>標題</th>
+<th>分數</th>
+<th>興趣度</th>
+<th>類別</th>
+<th>備註</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://news.ycombinator.com/item?id=50577265" rel="noopener noreferrer">語言模型可以自行重寫自己的權重</a></td>
+<td>462pt</td>
+<td>***</td>
+<td>重要 AI 模型 / 研究發布</td>
+<td>語言模型可重寫自身權重</td>
+</tr>
+<tr>
+<td><a href="https://news.ycombinator.com/item?id=50587208" rel="noopener noreferrer">Gnupg 中的遠端執行漏洞</a></td>
+<td>172pt</td>
+<td>***</td>
+<td>Web 資安 / 滲透測試</td>
+<td>Gnupg 存在遠端執行漏洞</td>
+</tr>
+<tr>
+<td><a href="https://news.ycombinator.com/item?id=50586292" rel="noopener noreferrer">ClawDOS – DOS 的 AI 程式碼代理</a></td>
+<td>135pt</td>
+<td>***</td>
+<td>AI 開發工具</td>
+<td>ClawDOS 是 DOS AI 程式碼代理</td>
+</tr>
+</tbody>
+</table>
+<h3>全部文章（部分）</h3>
+<ol>
+<li><a href="https://news.ycombinator.com/item?id=50577265" rel="noopener noreferrer">語言模型可以自行重寫自己的權重</a> (462pt) — 語言模型可重寫自身權重
+   💬 社群觀點：多數人肯定模型可自我優化，但有人質疑僅是過度擬合或修正特定 bug。</li>
+<li><a href="https://news.ycombinator.com/item?id=50587208" rel="noopener noreferrer">Gnupg 中的遠端執行漏洞</a> (172pt) — Gnupg 存在遠端執行漏洞
+   💬 社群觀點：部分留言指出漏洞影響範圍不明，且有人質疑報告是否誇大。</li>
+<li><a href="https://news.ycombinator.com/item?id=50586292" rel="noopener noreferrer">ClawDOS – DOS 的 AI 程式碼代理</a> (135pt) — ClawDOS 是 DOS AI 程式碼代理
+   💬 社群觀點：多數人讚賞創意與懷舊感，但有人指出市場缺乏針對舊系統（如 WinXP/Win7）的 AI 代理。</li>
+<li><a href="https://news.ycombinator.com/item?id=50588916" rel="noopener noreferrer">Astra 6.2 與 Sol 6.2 在 Simple Bench 上失敗</a> (118pt) — Astra 6.2 與 Sol 6.2 在 Simple Bench 失敗
+   💬 社群觀點：多數人認為新模型表現提升，但有人質疑基準測試結果與實際使用體驗不符。</li>
+<li><a href="https://news.ycombinator.com/item?id=50546587" rel="noopener noreferrer">LLMs 可以從十六進位轉儲逐字讀寫可執行檔</a> (100pt) — LLMs 可從十六進位轉儲讀寫可執行檔
+   💬 社群觀點：多數人認為 LLM 能讀寫可執行檔令人驚奇，但有人質疑 AI 生成機器碼的確定性與實用性。</li>
+</ol>
+<hr>
+<h2>Reddit</h2>
+<h3>注目話題</h3>
+<table>
+<thead>
+<tr>
+<th>標題</th>
+<th>票數</th>
+<th>留言數</th>
+<th>興趣度</th>
+<th>類別</th>
+<th>子版</th>
+<th>備註</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3>依類別列表</h3>
+<hr>
+<h2>資安部落格</h2>
+<table>
+<thead>
+<tr>
+<th>標題</th>
+<th>來源</th>
+<th>興趣度</th>
+<th>備註</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://www.aikido.dev/blog/ai-incidents-root-causes-patterns" rel="noopener noreferrer">2026 AI 事件：惡意代理、失竊金鑰及其他熟悉的故事</a></td>
+<td>aikido.dev</td>
+<td>***</td>
+<td>2026 AI 事件多因秘密洩露與弱隔離</td>
+</tr>
+<tr>
+<td><a href="https://www.aikido.dev/blog/aikido-launches-agentic-pentesting-for-ios-apps" rel="noopener noreferrer">Aikido 推出 iOS 應用程式的代理滲透測試</a></td>
+<td>aikido.dev</td>
+<td>***</td>
+<td>Aikido 推出 iOS 應用程式代理滲透測試</td>
+</tr>
+<tr>
+<td><a href="https://www.aikido.dev/blog/ruby2shell" rel="noopener noreferrer">Ruby2Shell：關鍵 Ruby RCE，受影響版本與修復方法 (CVE-2026-132825)</a></td>
+<td>aikido.dev</td>
+<td>***</td>
+<td>Ruby2Shell 關鍵 Ruby RCE 漏洞與修復</td>
+</tr>
+<tr>
+<td><a href="https://www.aikido.dev/blog/php-security-release-19-november-2026-cve-2026-115560" rel="noopener noreferrer">PHP 關鍵安全更新，11 月 19 日 (CVE-2026-129289, CVE-2026-115560)</a></td>
+<td>aikido.dev</td>
+<td>***</td>
+<td>PHP 19 日更新修補 18 個安全漏洞</td>
+</tr>
+<tr>
+<td><a href="https://www.aikido.dev/blog/deep-review-finds-java4shell-in-pr" rel="noopener noreferrer">Aikido Deep Review 在引入 Java4Shell 的 PR 中發現漏洞</a></td>
+<td>aikido.dev</td>
+<td>***</td>
+<td>Aikido Deep Review 發現 Java4Shell 漏洞</td>
+</tr>
+<tr>
+<td><a href="https://www.aikido.dev/blog/nginx2root-critical-nginx-rce-vulnerabilities" rel="noopener noreferrer">nginx2root：關鍵 nginx 漏洞，包含一個 RCE 【CVE-2026-123007, CVE-2026-123634, CVE-2026-123633, CVE-2026-121810, CVE-2026-113425】</a></td>
+<td>aikido.dev</td>
+<td>***</td>
+<td>nginx2root 關鍵 nginx 漏洞含 RCE</td>
+</tr>
+<tr>
+<td><a href="https://www.aikido.dev/blog/two-malicious-agent-framework-releases-hit-pypi-in-33-minutes" rel="noopener noreferrer">兩款惡意 agent-framework 在 PyPI 上於 33 分鐘內發布</a></td>
+<td>aikido.dev</td>
+<td>***</td>
+<td>兩款惡意 agent-framework 在 PyPI 發布</td>
+</tr>
+<tr>
+<td><a href="https://www.wiz.io/blog/nginx-http2-rce-vulnerabilities" rel="noopener noreferrer">NGINX 未認證遠端程式碼執行：CVE-2026-123633 與 CVE-2026-123007</a></td>
+<td>wiz.io</td>
+<td>***</td>
+<td>NGINX 未認證遠端程式碼執行漏洞</td>
+</tr>
+<tr>
+<td><a href="https://www.wiz.io/blog/malicious-version-of-microsofts-agent-framework-published-to-pypi" rel="noopener noreferrer">Microsoft agent-framework 遭入侵：金鑰竊取工具針對 Azure 與 CI 流程</a></td>
+<td>wiz.io</td>
+<td>***</td>
+<td>Microsoft agent-framework 遭入侵竊取金鑰</td>
+</tr>
+<tr>
+<td><a href="https://www.wiz.io/blog/introducing-wiz-ai-security-agent" rel="noopener noreferrer">推出 Wiz AI 安全代理</a></td>
+<td>wiz.io</td>
+<td>***</td>
+<td>推出 Wiz AI 安全代理</td>
+</tr>
+<tr>
+<td><a href="https://www.wiz.io/blog/inside-green-agent-investigation" rel="noopener noreferrer">The Green Agent POV: Formulating the Fix for an Exposed Container with Sensitive Data Access</a></td>
+<td>wiz.io</td>
+<td>***</td>
+<td>Green Agent 修復敏感資料容器洩露</td>
+</tr>
+<tr>
+<td><a href="https://www.wiz.io/blog/aspm-ai-era-pt-3-fixing-risk-code-speed" rel="noopener noreferrer">ASPM in the AI Era Part 3: Fixing Risk at the Speed of Code</a></td>
+<td>wiz.io</td>
+<td>***</td>
+<td>ASPM 在 AI 時代加速修復風險</td>
+</tr>
+<tr>
+<td><a href="https://www.wiz.io/blog/cve-2026-119618-rce-apache-http-server-vulnerability" rel="noopener noreferrer">Critical RCE Vulnerability in Apache HTTP Server: Everything You Need To Know</a></td>
+<td>wiz.io</td>
+<td>***</td>
+<td>Apache HTTP Server 關鍵 RCE 漏洞</td>
+</tr>
+<tr>
+<td><a href="https://www.wiz.io/blog/cyber-model-arena-ai-benchmark" rel="noopener noreferrer">How to Evaluate AI Agent Cybersecurity Capabilities</a></td>
+<td>wiz.io</td>
+<td>***</td>
+<td>評估 AI Agent 網路安全能力方法</td>
+</tr>
+<tr>
+<td><a href="https://krebsonsecurity.com/2026/11/cto-of-ransomwarehelp-indicted-for-wire-fraud/" rel="noopener noreferrer">RansomwareHelp CTO 因電信詐欺被起訴</a></td>
+<td>Krebs on Security</td>
+<td>***</td>
+<td>RansomwareHelp CTO 因電信詐欺被起訴</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/a-single-malicious-webpage-let.html" rel="noopener noreferrer">單一惡意網頁讓研究人員劫持 Meta Muse 並存取私人對話</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>單一惡意網頁可劫持 Meta Muse 存取對話</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/gnupg-warns-critical-gpgme-flaw-could.html" rel="noopener noreferrer">GnuPG 警告關鍵 GPGME 漏洞可能透過惡意 OpenPGP 金鑰洩露應用程式資料</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>GnuPG 警告 GPGME 漏洞可洩露應用程式資料</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/attackers-ai-agents-found-zero-day-in.html" rel="noopener noreferrer">攻擊者的 AI Agent 在醫療影像軟體發現零日漏洞並取得 Root 權限</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>攻擊者 AI Agent 在醫療影像軟體發現零日漏洞</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/signal-blocks-ai-agents-from-reading.html" rel="noopener noreferrer">Signal 阻止 AI Agent 透過截圖讀取私人對話</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>Signal 阻止 AI Agent 透過截圖讀取私人對話</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/hackers-exploit-critical-vmware-cisco.html" rel="noopener noreferrer">駭客利用 VMware、Cisco 與 Apache 關鍵漏洞進行間諜攻擊</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>駭客利用 VMware、Cisco 與 Apache 關鍵漏洞</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/whatsapp-patches-3-security-flaws.html" rel="noopener noreferrer">WhatsApp 修補 3 個安全漏洞，包括疑似用於詐騙的 Android Bug</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>WhatsApp 修補 Android Bug 疑似用於詐騙</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/new-linux-kvm-flaw-cve-2026-99312-lets.html" rel="noopener noreferrer">Linux KVM 漏洞 CVE-2026-99312 讓客觀 VM 可存取 AMD 主機記憶體</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>Linux KVM 漏洞讓客觀 VM 可存取主機記憶體</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/hackers-exploit-critical-cisco.html" rel="noopener noreferrer">駭客利用關鍵 Cisco Expressway 漏洞，入侵四台設備並進入內部網路</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>駭客利用 Cisco Expressway 漏洞入侵內部網路</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/china-linked-hackers-exploit-critical.html" rel="noopener noreferrer">中國關聯駭客利用關鍵 VMware vCenter 零日漏洞獲取管理權限並竊取資料</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>中國關聯駭客利用 VMware vCenter 零日漏洞</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/romulus-clickfix-attacks-deliver-rat.html" rel="noopener noreferrer">ROMULUS ClickFix 攻擊傳遞可監聽用戶並控制電腦的遠端存取惡意程式</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>ROMULUS ClickFix 攻擊傳遞可控制電腦惡意程式</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/new-unpatched-windows-0-day-fastunlock.html" rel="noopener noreferrer">新未修補的 Windows 0-Day FastUnlock 讓持有鎖定電腦的人可執行程式</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>新未修補 Windows 0-Day FastUnlock 可執行程式</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/threatsday-gpt-62-jailbreak-flaws.html" rel="noopener noreferrer">ThreatsDay：GPT-6.2 Jailbreak 漏洞、BubbleLoader PNG 惡意軟體、5 億美元勒索要求等共 17 則故事</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>ThreatsDay 報導 GPT-6.2 Jailbreak 等共 17 則故事</td>
+</tr>
+<tr>
+<td><a href="https://dev.to/kirandeepjassalcrypto/agentic-ai-for-payment-exceptions-in-langgraph-deadline-triage-sanctions-hits-a-release-the-llm-5na" rel="noopener noreferrer">LangGraph 中的代理式 AI 用於支付例外處理：期限分揀、制裁打擊與 LLM 絕不該做出的發布</a></td>
+<td>DEV Community</td>
+<td>***</td>
+<td>LangGraph 代理式 AI 用於支付例外處理</td>
+</tr>
+<tr>
+<td><a href="https://dev.to/neeraj_sharma_757fbb49aa7/your-ai-agent-wrote-code-where-does-it-run-a-sandbox-runner-in-under-50-lines-of-python-86b" rel="noopener noreferrer">你的 AI Agent 寫了程式碼。它在哪裡執行？50 行以內的 Python Sandbox Runner</a></td>
+<td>DEV Community</td>
+<td>***</td>
+<td>AI Agent 寫程式碼後在沙盒中執行</td>
+</tr>
+<tr>
+<td><a href="https://dev.to/dishant0406/gemini-4-neon-costs-more-per-token-and-less-per-task-3aee" rel="noopener noreferrer">Gemini 4 Neon 每 token 成本更高，但每任務成本更低</a></td>
+<td>DEV Community</td>
+<td>***</td>
+<td>Gemini 4 Neon 每 token 成本更高</td>
+</tr>
+<tr>
+<td><a href="https://www.infoq.com/news/2026/11/gke-kernel-network-bug/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=global" rel="noopener noreferrer">Google 如何追蹤 GKE API 延遲至 Linux 核心 TCP Bug</a></td>
+<td>InfoQ</td>
+<td>***</td>
+<td>Google 追蹤 GKE API 延遲至 Linux Bug</td>
+</tr>
+<tr>
+<td><a href="https://www.infoq.com/news/2026/11/meta-triton-tlx-gpu-compiler/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=global" rel="noopener noreferrer">Meta TLX：支援先進硬體能力的原生 GPU 編譯器擴充功能</a></td>
+<td>InfoQ</td>
+<td>***</td>
+<td>Meta TLX 支援先進硬體 GPU</td>
+</tr>
+<tr>
+<td><a href="https://www.infoq.com/news/2026/11/google-substrate-gvisor-cncf/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=global" rel="noopener noreferrer">Google 捐贈 Agent Substrate 與 gVisor 給 CNCF，以確保 AI Agent 在大規模下的安全性</a></td>
+<td>InfoQ</td>
+<td>***</td>
+<td>Google 捐贈 Agent Substrate 與 gVisor</td>
+</tr>
+<tr>
+<td><a href="https://www.infoq.com/news/2026/11/aws-emulator-local-testing/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=global" rel="noopener noreferrer">AWS 發布完全由代理生成的免費本地 AWS 模擬器</a></td>
+<td>InfoQ</td>
+<td>***</td>
+<td>AWS 發布代理生成免費本地模擬器</td>
+</tr>
+<tr>
+<td><a href="https://www.infoq.com/presentations/ai-assisted-software-delivery/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=global" rel="noopener noreferrer">演講：AI 輔助軟體交付：從程式碼到生產</a></td>
+<td>InfoQ</td>
+<td>***</td>
+<td>演講探討 AI 輔助軟體交付</td>
+</tr>
+<tr>
+<td><a href="https://www.infoq.com/news/2026/11/healthy-code-AI-tokens/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=global" rel="noopener noreferrer">使用人工智慧生成健康程式碼所需的 Token 更少</a></td>
+<td>InfoQ</td>
+<td>***</td>
+<td>AI 生成健康程式碼所需 Token 更少</td>
+</tr>
+<tr>
+<td><a href="https://www.infoq.com/presentations/rust-ai-symposium-agent-client-protocol/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=global" rel="noopener noreferrer">演講：RIIIR：使用 AI 將程式碼改寫為原生 Rust（Rewrite It In Idiomatic Rust）</a></td>
+<td>InfoQ</td>
+<td>***</td>
+<td>演講探討 AI 改寫程式碼為 Rust</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>今日總結</h2>
+<h3>三大焦點議題</h3>
+<ol>
+<li><strong>【AI 數學突破】</strong> — 美國 AI 開發企業 Anthropic 數學家與 Claude 模型共同證明百年難題「黎曼猜想」。此成果引發數學界關注，相關聲明僅有 4 頁並使用 Lean 系統驗證。</li>
+<li><strong>【AI 安全風險】</strong> — 多起系統故障與資安事件顯示 AI 加速脆弱性修補可能引發新風險。銀行、機場等關鍵基礎設施頻停，惡意 AI 代理竊取金鑰與漏洞攻擊案例激增。</li>
+<li><strong>【AI 開發工具】</strong> — GitHub 推出 Andon 一人軟體工廠，AI 代碼代理處理任務至合併僅人類決策時介入。Google 亦捐贈 Agent Substrate 與 gVisor 確保 AI 代理在大規模下的安全性。</li>
+</ol>
+<h3>跨平台熱點重疊</h3>
+<ul>
+<li><strong>AI 安全風險</strong>：Hatena + 資安部落格 + RSS 同步出現 — 多起系統故障與資安事件顯示 AI 加速脆弱性修補可能引發新風險。銀行、機場等關鍵基礎設施頻停，惡意 AI 代理竊取金鑰與漏洞攻擊案例激增。</li>
+</ul>
+</article>
+</main>
+</body>
+</html>

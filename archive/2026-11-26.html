@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daily Brief 存檔 — 2026-11-26</title>
+<style>
+  :root { --bg: #0b0f14; --fg: #c8d3df; --accent: #4fd1c5; --dim: #5a6b7a; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 2rem 1rem;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "SFMono-Regular", "Menlo", "Consolas", "Liberation Mono", monospace;
+    line-height: 1.6;
+  }
+  main { max-width: 1100px; margin: 0 auto; }
+  header { border-bottom: 1px solid var(--dim); padding-bottom: 1rem; margin-bottom: 2rem; }
+  .tagline { color: var(--accent); }
+  a { color: var(--accent); }
+  h1, h2, h3 { color: var(--fg); }
+  code, pre { background: #11161d; color: var(--accent); }
+  /* 報告表格：只讓「標題」(第一欄)與「備註」(最後一欄)兩個長文字欄限寬換行；
+     表頭與數字/類別/子版等短欄維持自然寬度、不逐字硬斷。整體放不下時橫向捲動不破版。 */
+  article { overflow-x: auto; }
+  article table { border-collapse: collapse; margin: 1rem 0; }
+  article th, article td {
+    border: 1px solid var(--dim); padding: 0.4rem 0.6rem;
+    text-align: left; vertical-align: top;
+  }
+  article th { color: var(--accent); white-space: nowrap; }
+  article td:first-child { max-width: 30ch; overflow-wrap: break-word; }
+  article td:last-child { max-width: 24ch; overflow-wrap: break-word; }
+  .meta { color: var(--dim); }
+  /* 今日重點：頂部導讀段落，左側 accent 邊條凸顯。 */
+  section.tldr { margin: 0 0 2rem; padding: 0.2rem 0 0.2rem 1rem;
+    border-left: 3px solid var(--accent); }
+  section.tldr .meta { color: var(--accent); letter-spacing: 0.05em; margin: 0 0 0.3rem; }
+  section.tldr p { margin: 0; }
+  nav.archive { margin-top: 2rem; border-top: 1px solid var(--dim); padding-top: 1rem; }
+  nav.archive ul { list-style: none; padding: 0; }
+  nav.archive li { margin: 0.25rem 0; }
+  /* 全部存檔頁：按月分組。 */
+  section.month-group { margin-bottom: 1.5rem; }
+  section.month-group h2 { color: var(--accent); font-size: 1.05rem;
+    border-bottom: 1px solid var(--dim); padding-bottom: 0.3rem; }
+  section.month-group ul { list-style: none; padding: 0;
+    display: flex; flex-wrap: wrap; gap: 0.3rem 1.4rem; }
+  section.month-group li { margin: 0.15rem 0; }
+  /* Hero 排：定位句 + 右上「關於本專案」按鈕。專案描述不直接顯示，收進 overlay。 */
+  .hero-row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+    justify-content: space-between; }
+  .about-btn { cursor: pointer; color: var(--accent); border: 1px solid var(--dim);
+    padding: 0.15rem 0.7rem; border-radius: 3px; user-select: none; white-space: nowrap; }
+  .about-btn:hover { border-color: var(--accent); }
+  /* 純 CSS overlay（無 JS）：隱藏 checkbox，label 當開關，:checked 顯示彈窗；背景 label 可關。 */
+  .about-checkbox { position: absolute; left: -9999px; }
+  .about-overlay { display: none; position: fixed; inset: 0; z-index: 100; }
+  .about-checkbox:checked ~ .about-overlay { display: block; }
+  .about-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.75); }
+  .about-panel { position: relative; max-width: 720px; margin: 6vh auto; max-height: 84vh;
+    overflow-y: auto; background: var(--bg); border: 1px solid var(--dim);
+    border-radius: 4px; padding: 1.5rem 2rem; }
+  .about-close { position: absolute; top: 0.5rem; right: 0.9rem; cursor: pointer;
+    color: var(--dim); font-size: 1.2rem; line-height: 1; text-decoration: none; }
+  .about-close:hover { color: var(--accent); }
+  /* system status block: hand-written CSS, terminal aesthetic; trend is inline SVG (no chart lib). */
+  section.status { margin-bottom: 2rem; border-bottom: 1px solid var(--dim); padding-bottom: 1rem; }
+  section.status h2 { color: var(--accent); font-size: 1rem; letter-spacing: 0.05em; }
+  .status-grid { display: flex; flex-wrap: wrap; gap: 2rem; align-items: flex-end; }
+  .status-streak { display: flex; flex-direction: column; }
+  .status-num { color: var(--accent); font-size: 2.4rem; line-height: 1; }
+  .status-label { color: var(--dim); font-size: 0.8rem; }
+  .status-trend { display: flex; flex-direction: column; flex: 1 1 240px; min-width: 200px; }
+  svg.spark { color: var(--accent); width: 100%; height: 40px; margin-top: 0.3rem; }
+  .status-rates { list-style: none; padding: 0; margin: 1rem 0 0;
+    display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; }
+  .status-rates li { display: flex; gap: 0.5rem; align-items: baseline; }
+  .status-src { color: var(--fg); }
+  .status-pct { color: var(--accent); }
+  .status-frac { color: var(--dim); font-size: 0.8rem; }
+  /* top nav：首頁 ⇄ 運行紀錄 的切換連結（終端風、無框架）。 */
+  nav.top { display: flex; gap: 1.2rem; margin: 0.3rem 0 0; font-size: 0.85rem; }
+  nav.top a { color: var(--dim); text-decoration: none; }
+  nav.top a:hover, nav.top a.on { color: var(--accent); }
+  /* 運行紀錄頁：一列一次 run（CI 執行史）。狀態矩陣為手刻小格，無圖表庫。 */
+  .runs-wrap { overflow-x: auto; }
+  table.runs { border-collapse: collapse; width: 100%; font-size: 0.85rem; margin-top: 1rem; }
+  table.runs th {
+    color: var(--dim); text-align: left; font-weight: normal; text-transform: uppercase;
+    letter-spacing: 0.06em; font-size: 0.72rem; padding: 0.3rem 0.6rem 0.5rem;
+    border-bottom: 1px solid var(--dim); white-space: nowrap;
+  }
+  table.runs td { padding: 0.45rem 0.6rem; border-bottom: 1px solid #1b232d; white-space: nowrap; }
+  table.runs tr:hover td { background: #11161d; }
+  table.runs .n { text-align: right; font-variant-numeric: tabular-nums; }
+  table.runs a.day { color: var(--fg); text-decoration: none; }
+  table.runs a.day:hover { color: var(--accent); text-decoration: underline; }
+  .rpill { font-size: 0.72rem; padding: 0.05rem 0.5rem; border-radius: 10px; border: 1px solid; }
+  .rpill.success { color: #56c271; border-color: #2c5c3a; }
+  .rpill.partial { color: #e0a52e; border-color: #6b551f; }
+  .rpill.failed { color: #e0603a; border-color: #6b3524; }
+  .rpill.unknown { color: var(--dim); border-color: var(--dim); }
+  /* absent = 該日 pipeline 整天沒跑（四份歷史皆無記錄），與 unknown 區分：
+     unknown 是「跑了但推導不出狀態」，absent 是「根本沒跑」。 */
+  .rpill.absent { color: #7a6bd6; border-color: #453c78; }
+  .rcells { display: inline-flex; gap: 3px; }
+  .rcell {
+    width: 16px; height: 16px; border-radius: 3px; display: inline-block; line-height: 16px;
+    text-align: center; font-size: 0.6rem; color: #0b0f14;
+  }
+  .rcell.ok { background: #56c271; }
+  .rcell.fail { background: #e0603a; }
+  .rcell.warn { background: #e0a52e; }
+  .rcell.na { background: #1b232d; color: var(--dim); }
+  .runs-legend { color: var(--dim); font-size: 0.72rem; margin-top: 1rem;
+    display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; }
+  .runs-legend .sw { width: 11px; height: 11px; border-radius: 2px; display: inline-block;
+    vertical-align: middle; margin-right: 0.3rem; }
+  .runs-empty { color: var(--dim); margin-top: 1.5rem; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <p class="tagline">本地 LLM 多代理自主系統</p>
+  <p class="meta">存檔日期：2026-11-26</p>
+  <p class="meta"><a href="../index.html">← 回首頁</a>　·　<a href="index.html">全部存檔</a></p>
+</header>
+<article>
+<h1>趨勢話題：2026-11-26</h1>
+<hr>
+<h2>Hatena Bookmark IT（日本市場）</h2>
+<h3>注目話題</h3>
+<table>
+<thead>
+<tr>
+<th>標題</th>
+<th>書籤數</th>
+<th>興趣度</th>
+<th>類別</th>
+<th>備註</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://onk.hatenablog.jp/entry/2026/11/25/022804" rel="noopener noreferrer">請 AI 撰寫文章時，使用層級式條列式讓其進行取捨選擇 - id:onk 的 Hatena Blog</a></td>
+<td>186</td>
+<td>***</td>
+<td>AI 開發工具</td>
+<td>建議用層級條列式讓 AI 取捨內容</td>
+</tr>
+<tr>
+<td><a href="https://zenn.dev/knowledgesense/articles/68128456fe7d28" rel="noopener noreferrer">AI 框架邁向第 3 世代。自我進化的 AI Agent 框架全貌</a></td>
+<td>174</td>
+<td>***</td>
+<td>AI 開發工具</td>
+<td>AI 框架邁向第 3 世代自我進化</td>
+</tr>
+<tr>
+<td><a href="https://zenn.dev/henteko/articles/ed8d1458246d7a" rel="noopener noreferrer">嘗試用形式方法驗證推理小說劇本，發現了 bug 與模糊性</a></td>
+<td>91</td>
+<td>***</td>
+<td>AI 開發工具</td>
+<td>用形式方法驗證推理小說劇本</td>
+</tr>
+</tbody>
+</table>
+<h3>全部文章（略）</h3>
+<ol>
+<li><a href="https://onk.hatenablog.jp/entry/2026/11/25/022804" rel="noopener noreferrer">請 AI 撰寫文章時，使用層級式條列式讓其進行取捨選擇 - id:onk 的 Hatena Blog</a> (186 users) — 建議用層級條列式讓 AI 取捨內容</li>
+<li><a href="https://zenn.dev/knowledgesense/articles/68128456fe7d28" rel="noopener noreferrer">AI 框架邁向第 3 世代。自我進化的 AI Agent 框架全貌</a> (174 users) — AI 框架邁向第 3 世代自我進化</li>
+<li><a href="https://zenn.dev/henteko/articles/ed8d1458246d7a" rel="noopener noreferrer">嘗試用形式方法驗證推理小說劇本，發現了 bug 與模糊性</a> (91 users) — 用形式方法驗證推理小說劇本</li>
+<li><a href="http://takagi-hiromitsu.jp/diary/20261124.html" rel="noopener noreferrer">高木浩光＠自宅的日記 - 「姓名未包含」不足以解決——KARTE 事件中洩漏的行為記錄屬於誰的個人數據</a> (66 users) — KARTE 事件洩漏行為記錄非個人數據</li>
+<li><a href="https://forest.watch.impress.co.jp/docs/news/2159145.html" rel="noopener noreferrer">「Todoist」遭非法入侵，約 6% 用戶的電子郵件與密碼哈希外洩／作為廢止中的「Microsoft To Do」替代方案備受期待</a> (40 users) — Todoist 遭非法入侵用戶密碼外洩</li>
+<li><a href="https://news.web.nhk/newsweb/na/nd-20261125de81289" rel="noopener noreferrer">M&amp;A 仲介公司遭非法入侵，顧客資訊或外洩數千家 ／ NHK 新聞</a> (20 users) — M&amp;A 仲介公司遭非法入侵資訊外洩</li>
+<li><a href="https://speakerdeck.com/moulongzhang/20261124-githubconnecttokyo-session2" rel="noopener noreferrer">GitHub Copilot 開創的 Agent 時代開發工作流</a> (7 users) — GitHub Copilot 開創 Agent 時代工作流</li>
+<li><a href="https://news.web.nhk/newsweb/na/nd-20261125de81299" rel="noopener noreferrer">PALS 系統顧客資訊約 200 萬件外洩 ／ NHK 新聞</a> (4 users) — PALS 系統顧客資訊約 200 萬件外洩</li>
+</ol>
+<hr>
+<h2>Hacker News（全球）</h2>
+<h3>注目話題</h3>
+<table>
+<thead>
+<tr>
+<th>標題</th>
+<th>分數</th>
+<th>興趣度</th>
+<th>類別</th>
+<th>備註</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://news.ycombinator.com/item?id=50633922" rel="noopener noreferrer">Ternary Bonsai 2.5 27B</a></td>
+<td>514pt</td>
+<td>***</td>
+<td>重要 AI 模型 / 研究發布</td>
+<td>Ternary Bonsai 2.5 模型發布</td>
+</tr>
+<tr>
+<td><a href="https://news.ycombinator.com/item?id=50637056" rel="noopener noreferrer">PenGPT：一款用於手寫與草圖的生成式變壓器</a></td>
+<td>369pt</td>
+<td>***</td>
+<td>重要 AI 模型 / 研究發布</td>
+<td>PenGPT 生成手寫與草圖</td>
+</tr>
+<tr>
+<td><a href="https://news.ycombinator.com/item?id=50642086" rel="noopener noreferrer">Google 發布 Cogentic 論文，涵蓋整數分解、離散對數等</a></td>
+<td>292pt</td>
+<td>***</td>
+<td>重要 AI 模型 / 研究發布</td>
+<td>Google 發布密碼學論文</td>
+</tr>
+</tbody>
+</table>
+<h3>全部文章（部分）</h3>
+<ol>
+<li><a href="https://news.ycombinator.com/item?id=50633922" rel="noopener noreferrer">Ternary Bonsai 2.5 27B</a> (514pt) — Ternary Bonsai 2.5 模型發布
+   💬 社群觀點：多數人肯定模型效能顯著提升，但有人質疑分數是否因基準測試變動或過度優化所致。</li>
+<li><a href="https://news.ycombinator.com/item?id=50637056" rel="noopener noreferrer">PenGPT：一款用於手寫與草圖的生成式變壓器</a> (369pt) — PenGPT 生成手寫與草圖
+   💬 社群觀點：多數人認為模型輕巧且有趣，但有人指出對草書與西班牙文處理不佳。</li>
+<li><a href="https://news.ycombinator.com/item?id=50642086" rel="noopener noreferrer">Google 發布 Cogentic 論文，涵蓋整數分解、離散對數等</a> (292pt) — Google 發布密碼學論文
+   💬 社群觀點：多數人肯定效能提升，但有人指出基準測試只比單執行緒，實際負載未必更快。</li>
+<li><a href="https://news.ycombinator.com/item?id=50643065" rel="noopener noreferrer">實驗室可能已破解 P 時間內的分解</a> (211pt) — 實驗室或已破解 P 時間分解
+   💬 社群觀點：留言質疑加密安全，有人指出 RSA 被破解風險，並建議採用後量子加密。</li>
+<li><a href="https://news.ycombinator.com/item?id=50638478" rel="noopener noreferrer">以每顆 3 美元的價格接管美國財政部子域名</a> (199pt) — 以 3 美元接管美國財政部子域名
+   💬 社群觀點：多數人認為此漏洞反映 DNS 維護疏失與 AWS 防護不足，但 AWS 強調責任在客戶端 DNS 記錄管理。</li>
+<li><a href="https://news.ycombinator.com/item?id=50644817" rel="noopener noreferrer">1Password 資安事件</a> (115pt) — 1Password 發生資安事件
+   💬 社群觀點：多數人肯定 1Password 資安事件影響，但有人質疑未明確說明加密金庫是否遭下載。</li>
+<li><a href="https://news.ycombinator.com/item?id=50634426" rel="noopener noreferrer">Launch HN: Versine (YC F26) – MCP 用於發送與接收金錢</a> (100pt) — Versine 用 MCP 發送與接收金錢
+   💬 社群觀點：多數人看好 AI 支付潛力，但有人質疑資金安全與監管合規問題。</li>
+<li><a href="https://news.ycombinator.com/item?id=50624446" rel="noopener noreferrer">使用 LLMs 將 Rockbox 移植到未文檔化的 $9 Aliexpress 'YP3' MP3 播放器</a> (79pt) — 用 LLMs 移植 Rockbox 到 MP3 播放器
+   💬 社群觀點：多數人肯定移植成功與開源社群價值，但有人指出未文檔化硬體難以取得支援。</li>
+<li><a href="https://news.ycombinator.com/item?id=50642939" rel="noopener noreferrer">用 Lean 檢查 Clojure 核心，發現未報告的 bug</a> (55pt) — 用 Lean 檢查 Clojure 核心發現 bug
+   💬 社群觀點：部分人質疑 Lisp 系語言本質無型，形式化驗證發現的 bug 未必是問題；另有觀點認為 Haskell 標準庫若出現同</li>
+<li><a href="https://news.ycombinator.com/item?id=50635783" rel="noopener noreferrer">預測任何數據集的 LoRA 大小</a> (44pt) — 預測任何數據集的 LoRA 大小
+   💬 社群觀點：多數人肯定效能提升，但有人質疑離線數據的 1:1 交換是否成立。</li>
+</ol>
+<hr>
+<h2>Reddit</h2>
+<h3>注目話題</h3>
+<table>
+<thead>
+<tr>
+<th>標題</th>
+<th>票數</th>
+<th>留言數</th>
+<th>興趣度</th>
+<th>類別</th>
+<th>子版</th>
+<th>備註</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3>依類別列表</h3>
+<hr>
+<h2>資安部落格</h2>
+<table>
+<thead>
+<tr>
+<th>標題</th>
+<th>來源</th>
+<th>興趣度</th>
+<th>備註</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://www.aikido.dev/blog/continuous-automated-red-teaming" rel="noopener noreferrer">什麼是連續自動化紅隊測試？</a></td>
+<td>aikido.dev</td>
+<td>***</td>
+<td>連續自動化紅隊測試模擬真實攻擊</td>
+</tr>
+<tr>
+<td><a href="https://www.aikido.dev/blog/hugging-face-phishing-pages" rel="noopener noreferrer">攻擊者利用 Hugging Face 的 AI 製作釣魚頁面網頁</a></td>
+<td>aikido.dev</td>
+<td>***</td>
+<td>攻擊者用 Hugging Face AI 製作釣魚網頁</td>
+</tr>
+<tr>
+<td><a href="https://www.aikido.dev/blog/artex-ai-pentesting-defenders" rel="noopener noreferrer">ARTEX 攻擊告訴防禦者關於 AI 滲透測試的什麼</a></td>
+<td>aikido.dev</td>
+<td>***</td>
+<td>FBI 警告攻擊者使用 ARTEX AI 滲透測試</td>
+</tr>
+<tr>
+<td><a href="https://www.aikido.dev/blog/aikido-launches-agentic-pentesting-for-ios-apps" rel="noopener noreferrer">Aikido 推出 iOS 應用程式代理滲透測試</a></td>
+<td>aikido.dev</td>
+<td>***</td>
+<td>Aikido 推出 iOS 應用程式代理滲透測試</td>
+</tr>
+<tr>
+<td><a href="https://www.aikido.dev/blog/ruby2shell" rel="noopener noreferrer">Ruby2Shell：關鍵 Ruby RCE，受影響版本和如何修復（CVE-2026-132825）</a></td>
+<td>aikido.dev</td>
+<td>***</td>
+<td>Ruby2Shell 關鍵 Ruby RCE 漏洞及修復</td>
+</tr>
+<tr>
+<td><a href="https://www.aikido.dev/blog/php-security-release-19-november-2026-cve-2026-115560" rel="noopener noreferrer">PHP 關鍵安全發布，19 月（CVE-2026-129289, CVE-2026-115560）</a></td>
+<td>aikido.dev</td>
+<td>***</td>
+<td>PHP 19 月關鍵安全發布修補 18 個漏洞</td>
+</tr>
+<tr>
+<td><a href="https://www.aikido.dev/blog/deep-review-finds-java4shell-in-pr" rel="noopener noreferrer">Aikido 的 Deep Review 在引入 Java4Shell 的 PR 中發現了它</a></td>
+<td>aikido.dev</td>
+<td>***</td>
+<td>Aikido Deep Review 發現 Java4Shell 漏洞</td>
+</tr>
+<tr>
+<td><a href="https://www.aikido.dev/blog/nginx2root-critical-nginx-rce-vulnerabilities" rel="noopener noreferrer">nginx2root：關鍵 nginx 漏洞，包括一個 RCE 【CVE-2026-123007, CVE-2026-123634, CVE-2026-123633, CVE-2026-121810, CVE-2026-113425】</a></td>
+<td>aikido.dev</td>
+<td>***</td>
+<td>nginx2root 關鍵 nginx 漏洞含 RCE</td>
+</tr>
+<tr>
+<td><a href="https://www.wiz.io/blog/agentic-offensive-frameworks-intent-ids-artex-cairn" rel="noopener noreferrer">深入代理攻擊框架：意圖 ID</a></td>
+<td>wiz.io</td>
+<td>***</td>
+<td>代理攻擊框架意圖 ID 洩漏至受害者日誌</td>
+</tr>
+<tr>
+<td><a href="https://www.wiz.io/blog/agentic-attacks-artex-offensive-ai-frameworks" rel="noopener noreferrer">代理攻擊：在野外</a></td>
+<td>wiz.io</td>
+<td>***</td>
+<td>代理攻擊框架導致雲端入侵激增</td>
+</tr>
+<tr>
+<td><a href="https://www.wiz.io/blog/nginx-http2-rce-vulnerabilities" rel="noopener noreferrer">NGINX 未認證遠端程式碼執行漏洞：CVE-2026-123633 與 CVE-2026-123007</a></td>
+<td>wiz.io</td>
+<td>***</td>
+<td>NGINX 未認證遠端程式碼執行漏洞</td>
+</tr>
+<tr>
+<td><a href="https://www.wiz.io/blog/malicious-version-of-microsofts-agent-framework-published-to-pypi" rel="noopener noreferrer">Microsoft agent-framework 遭入侵：憑證竊取工具鎖定 Azure 與 CI 流程</a></td>
+<td>wiz.io</td>
+<td>***</td>
+<td>Microsoft agent-framework 遭入侵竊取憑證</td>
+</tr>
+<tr>
+<td><a href="https://www.wiz.io/blog/introducing-wiz-ai-security-agent" rel="noopener noreferrer">推出 Wiz AI 資安 Agent</a></td>
+<td>wiz.io</td>
+<td>***</td>
+<td>推出 Wiz AI 資安 Agent</td>
+</tr>
+<tr>
+<td><a href="https://www.wiz.io/blog/inside-green-agent-investigation" rel="noopener noreferrer">Green Agent 觀點：為遭外洩敏感資料容器制定修復方案</a></td>
+<td>wiz.io</td>
+<td>***</td>
+<td>Green Agent 為遭外洩敏感資料容器制定修復方案</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/hackers-exploit-two-geoserver-flaws-as.html" rel="noopener noreferrer">駭客利用兩個 GeoServer 漏洞，研究人員警告未認證遠端執行鏈</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>駭客利用兩個 GeoServer 漏洞</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/drupal-fail2install-exploit-details.html" rel="noopener noreferrer">Drupal Fail2Install 漏洞詳情浮現，關鍵遠端執行漏洞遭積極利用</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>Drupal Fail2Install 遭積極利用</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/hackers-exploited-cvss-100-hexpm-rce.html" rel="noopener noreferrer">駭客利用 CVSS 10.0 Hex.pm RCE 漏洞入侵 6 個包註冊服務器</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>駭客入侵 Hex.pm 六個包註冊服務器</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/hackers-compromise-24-check-point.html" rel="noopener noreferrer">駭客疑似利用 AI 驅動工具入侵 24 個 Check Point 管理服務器</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>駭客利用 AI 工具入侵 Check Point</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/com-affiliated-hackers-hijack-cloud.html" rel="noopener noreferrer">與 Com 有關的駭客透過語音釣魚劫持雲端帳戶進行資料竊取與勒索</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>Com 駭客透過語音釣魚竊取資料</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/wordpress-blocks-six-backdoored-wp.html" rel="noopener noreferrer">WordPress 在惡意版本發布前移除 6 個遭後門植入的 WP Connect 外掛</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>WordPress 移除六個遭後門外掛</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/vmware-vcenter-hit-by-another-critical.html" rel="noopener noreferrer">VMware vCenter 遭另一項評級為 9.8 的認證繞過漏洞攻擊，零日漏洞利用後 Broadcom 已發布修補程式</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>VMware vCenter 遭認證繞過漏洞攻擊</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/okta-links-shinyhunters-associated.html" rel="noopener noreferrer">Okta 將與 ShinyHunters 有關的語音釣魚團體連結至新的 INCEPTION 資料外洩網站</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>Okta 連結語音釣魚團體至資料外洩</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/hackers-found-way-around-github-sha.html" rel="noopener noreferrer">駭客找到繞過 GitHub SHA Pinning 的方法，此網路研討會說明如何填補差距</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>駭客找到繞過 GitHub SHA Pinning</td>
+</tr>
+<tr>
+<td><a href="https://thehackernews.com/2026/11/google-researcher-shows-how-single-bit.html" rel="noopener noreferrer">Google 研究員展示 .NET 檔案中單一位元變更如何繞過 Windows 程式碼完整性保護</a></td>
+<td>The Hacker News</td>
+<td>***</td>
+<td>Google 展示單一位元變更繞過保護</td>
+</tr>
+<tr>
+<td><a href="https://dev.to/rockyyy/40-failed-ssh-logins-read-the-line-after-the-last-one-bk1" rel="noopener noreferrer">40 次失敗的 SSH 登入：請閱讀最後一行之後的內容</a></td>
+<td>DEV Community</td>
+<td>***</td>
+<td>40 次失敗 SSH 登入需讀最後一行</td>
+</tr>
+<tr>
+<td><a href="https://dev.to/andreagomez/zoomeye-context-for-cve-2026-129713-170915-ak-sm-matches-not-a-vulnerable-fleet-count-317k" rel="noopener noreferrer">ZoomEye Context for CVE-2026-129713：170,915 AK-SM 匹配，非易受攻擊艦隊數量</a></td>
+<td>DEV Community</td>
+<td>***</td>
+<td>ZoomEye 顯示非易受攻擊艦隊數量</td>
+</tr>
+<tr>
+<td><a href="https://dev.to/mujiatextile/a-14-row-spec-sheet-table-at-355-px-what-table-layout-auto-actually-does-to-a-b2b-data-table-83" rel="noopener noreferrer">355 px 的 14 行規格表：table-layout: auto 對 B2B 資料表的實際影響</a></td>
+<td>DEV Community</td>
+<td>***</td>
+<td>table-layout: auto 影響 B2B 資料表</td>
+</tr>
+<tr>
+<td><a href="https://www.infoq.com/news/2026/11/deepmind-gemini-robotics-2-5/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=global" rel="noopener noreferrer">DeepMind 的 Gemini Robotics 2.5 旨在讓機器人更安全、更靈巧且學習更快</a></td>
+<td>InfoQ</td>
+<td>***</td>
+<td>DeepMind 推出 Gemini Robotics 2.5</td>
+</tr>
+<tr>
+<td><a href="https://www.infoq.com/news/2026/11/vercel-board-agents/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=global" rel="noopener noreferrer">Vercel 推出實驗性 Board，協調人類與程式碼代理跨任務</a></td>
+<td>InfoQ</td>
+<td>***</td>
+<td>Vercel 推出實驗性 Board 協調任務</td>
+</tr>
+<tr>
+<td><a href="https://www.infoq.com/news/2026/11/openai-spark-fleet/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=global" rel="noopener noreferrer">QCon San Francisco 2026：在 OpenAI 使用 Codex Agents 自動化 Spark 升級</a></td>
+<td>InfoQ</td>
+<td>***</td>
+<td>OpenAI 在 QCon 2026 展示 Codex Agents 自動化 Spark</td>
+</tr>
+<tr>
+<td><a href="https://www.infoq.com/news/2026/11/cncf-vm-ai-workloads/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=global" rel="noopener noreferrer">CNCF 研究顯示虛擬機器在 AI 工作負載演進中仍居核心地位</a></td>
+<td>InfoQ</td>
+<td>***</td>
+<td>CNCF 研究顯示虛擬機器在 AI 工作負載中仍居核心</td>
+</tr>
+<tr>
+<td><a href="https://www.infoq.com/news/2026/11/openai-git-pando/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=global" rel="noopener noreferrer">OpenAI 推出 Pando，為程式碼代理擴展 Git</a></td>
+<td>InfoQ</td>
+<td>***</td>
+<td>OpenAI 推出 Pando 為程式碼代理擴展 Git</td>
+</tr>
+<tr>
+<td><a href="https://www.infoq.com/articles/llm-agent-architecture-evals-grounding/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=global" rel="noopener noreferrer">文章：圍繞非確定性進行工程化評估、錨定與 AI 草擬可疑報告的發布門禁</a></td>
+<td>InfoQ</td>
+<td>***</td>
+<td>文章建議工程化評估以處理非確定性</td>
+</tr>
+<tr>
+<td><a href="https://www.infoq.com/news/2026/11/qcon-ai-agent-security/?utm_campaign=infoq_content&amp;utm_source=infoq&amp;utm_medium=feed&amp;utm_term=global" rel="noopener noreferrer">QCon San Francisco 2026：生產環境中的 AI 代理安全防護</a></td>
+<td>InfoQ</td>
+<td>***</td>
+<td>Google 在 QCon 2026 提出 AI 代理安全防護模式</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>今日總結</h2>
+<h3>三大焦點議題</h3>
+<ol>
+<li><strong>【AI 框架進化】</strong> — AI 框架邁向第 3 世代，自我進化的 AI Agent 框架全貌。GitHub Copilot 於 2026 年 11 月展示開創 Agent 時代開發工作流，顯示新世代開發流程趨勢。</li>
+<li><strong>【資安事件】</strong> — 多起重大資安事件發生，包括 KARTE、Todoist 等服務遭非法入侵導致用戶數據外洩。此外，PHP、nginx2root 等關鍵安全漏洞被積極利用，影響範圍廣泛。</li>
+<li><strong>【AI 攻擊與防禦】</strong> — 攻擊者利用 AI 技術進行釣魚網頁製作、滲透測試等惡意行為。防禦端則推出 Wiz AI 資安 Agent 等新工具，並持續優化自動化紅隊測試與漏洞修補機制。</li>
+</ol>
+<h3>跨平台熱點重疊</h3>
+<ul>
+<li><strong>資安事件</strong>：Hatena + HN + 資安部落格 + RSS 同步出現 — 多起重大資安事件發生，包括 KARTE、Todoist 等服務遭非法入侵導致用戶數據外洩。此外，PHP、nginx2root 等關鍵安全漏洞被積極利用，影響範圍廣泛。</li>
+<li><strong>AI 攻擊與防禦</strong>：HN + 資安部落格 同步出現 — 攻擊者利用 AI 技術進行釣魚網頁製作、滲透測試等惡意行為。防禦端則推出 Wiz AI 資安 Agent 等新工具，並持續優化自動化紅隊測試與漏洞修補機制。</li>
+</ul>
+</article>
+</main>
+</body>
+</html>
